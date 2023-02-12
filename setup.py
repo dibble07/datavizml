@@ -6,8 +6,8 @@ with open('README.md', 'r') as readme_file:
 requirements = ['matplotlib', 'numpy', 'pandas', 'ppscore', 'scikit-learn', 'statsmodels']
 
 setup(
-    name='DataVizML',
-    version='0.0.1',
+    name='datavizml',
+    version='0.0.2',
     author='Robert Dibble',
     author_email='robertdibble@live.co.uk',
     description='A package to explore and visualise a dataset in preparation for an ML project',
