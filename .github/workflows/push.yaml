@@ -2,7 +2,7 @@ name: Push workflow
 run-name: ${{ github.actor }} is running the push workflow
 on: [push]
 jobs:
-  test:
+  format-and-test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -15,6 +15,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements_dev.txt
         pip install .
+    - name: Format with black
+      run: |
+        black .
     - name: Test with pytest
       run: |
         pytest
