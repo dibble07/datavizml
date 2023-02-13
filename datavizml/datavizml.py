@@ -37,9 +37,13 @@ class SingleDistribution:
             self.ax_target = self.ax_feature.twinx()
 
     def __str__(self):
-        feature_str = f"feature: {self.feature.name}"
-        target_str = f"target: {self.target.name}"
+        # conditional strings
+        target_val = self.target.name if self.has_target else "no target provided"
         score_val = self.score if hasattr(self, "score") else "not calculated"
+
+        # attribute related strings
+        feature_str = f"feature: {self.feature.name}"
+        target_str = f"target: {target_val}"
         score_str = f"score: {score_val}"
 
         return ", ".join([feature_str, target_str, score_str])
@@ -116,11 +120,11 @@ class SingleDistribution:
         # add title
         if self.has_target:
             self.ax_feature.set_title(
-                f"PPS = {self.score:.2f}\n({100*self.__missing_proportion:.1f}% missing)"
+                f"PPS = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
             )
         else:
             self.ax_feature.set_title(
-                f"Inter-quartile skew = {self.score:.2f}\n({100*self.__missing_proportion:.1f}% missing)"
+                f"Inter-quartile skew = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
             )
 
     def calculate_score(self):
@@ -136,7 +140,7 @@ class SingleDistribution:
 
         else:
             # calculate skew of median towards quartiles
-            lower, median, upper = np.quantile(self.feature, [0.25, 0.5, 0.75])
+            lower, median, upper = np.quantile(self.feature.dropna(), [0.25, 0.5, 0.75])
             middle = (upper + lower) / 2
             range_ = abs(upper - lower)
             self.score = abs((median - middle)) / range_ / 2
@@ -250,3 +254,8 @@ class SingleDistribution:
                 raise TypeError(
                     f"score is of {score.__class__.__name__} type which is not valid"
                 )
+
+    # missing proportion getter
+    @property
+    def missing_proportion(self):
+        return self.__missing_proportion
