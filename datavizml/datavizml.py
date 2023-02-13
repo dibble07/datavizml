@@ -39,7 +39,8 @@ class SingleDistribution:
     def __str__(self):
         feature_str = f"feature: {self.feature.name}"
         target_str = f"target: {self.target.name}"
-        score_str = f"score: {self.score}"
+        score_val = self.score if hasattr(self, "score") else "not calculated"
+        score_str = f"score: {score_val}"
 
         return ", ".join([feature_str, target_str, score_str])
 
