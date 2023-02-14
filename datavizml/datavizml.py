@@ -193,13 +193,8 @@ class SingleDistribution:
             raise AttributeError("This attribute has already been set")
 
         else:
-            # extract original class name
-            class_name = feature.__class__.__name__
-
             # convert array to series
-            if isinstance(feature, np.ndarray):
-                feature = np.squeeze(feature)
-                feature = pd.Series(feature, name="unnamed")
+            feature, class_name = self.to_dataframe(feature)
 
             # only accept pandas series object
             if isinstance(feature, pd.Series):
@@ -220,13 +215,8 @@ class SingleDistribution:
             raise AttributeError("This attribute has already been set")
 
         else:
-            # extract original class name
-            class_name = target.__class__.__name__
-
             # convert array to series
-            if isinstance(target, np.ndarray):
-                target = np.squeeze(target)
-                target = pd.Series(target, name="unnamed")
+            target, class_name = self.to_dataframe(target)
 
             # only accept pandas series object
             if isinstance(target, pd.Series):
@@ -259,3 +249,16 @@ class SingleDistribution:
     @property
     def missing_proportion(self):
         return self.__missing_proportion
+
+    # convert to dataframe
+    @staticmethod
+    def to_dataframe(input):
+        # extract original class name
+        class_name = input.__class__.__name__
+
+        # convert array to series
+        if isinstance(input, np.ndarray):
+            input = np.squeeze(input)
+            input = pd.Series(input, name="unnamed")
+
+        return input, class_name
