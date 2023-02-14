@@ -25,8 +25,16 @@ def test_prescribed_score():
     )
     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
 
+    # check inability to initiate with score value as string
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=x, ax=ax, target=y, score="0.1")
+
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax, target=y, score=0.1)
+
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        sd.score = 0.2
 
     # check score value
     assert sd.score == 0.1
