@@ -44,7 +44,7 @@ def test_single_with_pandas_with_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
     x = pd.Series(
-        ["low", "low", "high", np.nan] * 4,
+        [False, False, True, np.nan] * 4,
         name="feature_test",
     )
     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
