@@ -1,6 +1,6 @@
-name: Push workflow
-run-name: ${{ github.actor }} is running the push workflow
-on: [push]
+name: Pull request workflow
+run-name: ${{ github.actor }} is running the pull request workflow
+on: [pull_request]
 jobs:
   format-and-test:
     runs-on: ubuntu-latest
