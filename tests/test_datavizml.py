@@ -8,12 +8,16 @@ import pytest
 def test_single_with_list():
     # initialise inputs
     _, ax = plt.subplots()
-    x = [1, 2]
-    y = [0, 1]
+    x_list = [1, 2]
+    y_list = [0, 1]
+    x_array = np.array([1, 2])
+    y_array = np.array([0, 1])
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
-        SingleDistribution(feature=x, ax=ax, target=y)
+        SingleDistribution(feature=x_list, ax=ax, target=y_array)
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=x_array, ax=ax, target=y_list)
 
 
 def test_prescribed_score():
