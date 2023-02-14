@@ -44,7 +44,7 @@ def test_single_with_pandas_with_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
     x = pd.Series(
-        [1, 1, 2, np.nan] * 4,
+        ["low", "low", "high", np.nan] * 4,
         name="feature_test",
     )
     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
@@ -81,7 +81,7 @@ def test_single_with_pandas_with_target(capsys):
 def test_single_with_array_without_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
-    x = np.array([0, 1, 2, 3, 4, 5, 6, np.nan])
+    x = np.array([0, 1, 2, 3, 4, 5, 6, np.nan]) * 1000
 
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax)
