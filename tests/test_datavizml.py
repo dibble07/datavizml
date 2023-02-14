@@ -8,12 +8,16 @@ import pytest
 def test_single_with_list():
     # initialise inputs
     _, ax = plt.subplots()
-    x = [1, 2]
-    y = [0, 1]
+    x_list = [1, 2]
+    y_list = [0, 1]
+    x_array = np.array([1, 2])
+    y_array = np.array([0, 1])
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
-        SingleDistribution(feature=x, ax=ax, target=y)
+        SingleDistribution(feature=x_list, ax=ax, target=y_array)
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=x_array, ax=ax, target=y_list)
 
 
 def test_prescribed_score():
@@ -25,18 +29,26 @@ def test_prescribed_score():
     )
     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
 
+    # check inability to initiate with score value as string
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=x, ax=ax, target=y, score="0.1")
+
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax, target=y, score=0.1)
+
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        sd.score = 0.2
 
     # check score value
     assert sd.score == 0.1
 
 
-def test_single_with_pandas_with_target(capsys):
+def test_single_with_boolean_pandas_with_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
     x = pd.Series(
-        [1, 1, 2, np.nan] * 4,
+        [False, False, True, np.nan] * 4,
         name="feature_test",
     )
     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
@@ -70,10 +82,10 @@ def test_single_with_pandas_with_target(capsys):
     assert sd.score == 1.0
 
 
-def test_single_with_array_without_target(capsys):
+def test_single_with_interger_array_without_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
-    x = np.array([0, 1, 2, 3, 4, 5, 6, np.nan])
+    x = np.array(list(range(16 - 1)) + [np.nan]) * 1000
 
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax)
@@ -85,7 +97,7 @@ def test_single_with_array_without_target(capsys):
     assert expected == captured.out
 
     # check missing proportion value
-    assert sd.missing_proportion == 0.125
+    assert sd.missing_proportion == 1 / 16
 
     # check inability to reset values
     with pytest.raises(AttributeError):

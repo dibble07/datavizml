@@ -27,8 +27,9 @@ class SingleDistribution:
         )
 
         # supplementary/reusable variables
-        self.is_bool = pd.api.types.is_bool_dtype(feature)
-        self.is_numeric = pd.api.types.is_numeric_dtype(feature)
+        feature_no_null = self.feature.dropna().convert_dtypes()
+        self.is_bool = pd.api.types.is_bool_dtype(feature_no_null)
+        self.is_numeric = pd.api.types.is_numeric_dtype(feature_no_null)
         missing_proportion = self.feature.isna().value_counts(normalize=True)
         self.__missing_proportion = (
             missing_proportion[True] if True in missing_proportion.index else 0
