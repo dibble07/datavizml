@@ -40,7 +40,7 @@ def test_prescribed_score():
     assert sd.score == 0.1
 
 
-def test_single_with_pandas_with_target(capsys):
+def test_single_with_boolean_pandas_with_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
     x = pd.Series(
@@ -78,10 +78,10 @@ def test_single_with_pandas_with_target(capsys):
     assert sd.score == 1.0
 
 
-def test_single_with_array_without_target(capsys):
+def test_single_with_interger_array_without_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
-    x = np.array([0, 1, 2, 3, 4, 5, 6, np.nan]) * 1000
+    x = np.array(list(range(16 - 1)) + [np.nan]) * 1000
 
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax)
@@ -93,7 +93,7 @@ def test_single_with_array_without_target(capsys):
     assert expected == captured.out
 
     # check missing proportion value
-    assert sd.missing_proportion == 0.125
+    assert sd.missing_proportion == 1 / 16
 
     # check inability to reset values
     with pytest.raises(AttributeError):
