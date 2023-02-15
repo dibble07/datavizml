@@ -17,7 +17,7 @@ Contents
 
 .. toctree::
 
-   modules
+   datavizml
 
 .. note::
 
