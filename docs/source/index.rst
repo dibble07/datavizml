@@ -14,6 +14,7 @@ Welcome to DataVizML's documentation!
 
    install
    datavizml
+   demonstration
 
 Indices and tables
 ==================
