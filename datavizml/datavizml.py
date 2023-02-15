@@ -6,12 +6,27 @@ from statsmodels.stats.proportion import proportion_confint
 
 
 class SingleDistribution:
+    """A graphical summary of a given feature and its relationship to a target
+
+    :param feature: Feature to be analysed
+    :type feature: pandas Series
+    :param ax: Axes to plot on
+    :type ax: matplotlib Axes
+    :param target: Target to be predicted
+    :type target: pandas Series, optional
+    :param score: Precomputed score to avoid recalculation
+    :type score: float, optional
+    :param binning_threshold: Maximum number of distinct values in the column before binning, defaults to 12
+    :type binning_threshold: int, optional
+    """
+
     BINNING_THRESHOLD_DEFAULT = 12  # distinct values for binning
     CI_SIGNIFICANCE_DEFAULT = 0.05  # confidence interval significance
     COLOUR_FEATURE_DEFAULT = "grey"  # colour used for feature
     COLOUR_TARGET_DEFAULT = "tab:blue"  # colour used for target
 
     def __init__(self, feature, ax, target=False, score=False, binning_threshold=False):
+        """Constructor method"""
         # input variables
         self.ax_feature = ax
         self.feature = feature
@@ -38,6 +53,12 @@ class SingleDistribution:
             self.ax_target = self.ax_feature.twinx()
 
     def __str__(self):
+        """Returns a string representation of the instance
+
+        :return: A string containing the feature name, target name, and score if available
+        :rtype: str
+        """
+
         # conditional strings
         target_val = self.target.name if self.has_target else "no target provided"
         score_val = self.score if hasattr(self, "score") else "not calculated"
@@ -55,6 +76,16 @@ class SingleDistribution:
         colour_feature=COLOUR_FEATURE_DEFAULT,
         colour_target=COLOUR_TARGET_DEFAULT,
     ):
+        """Generates and decorates the plot
+
+        : param ci_significance: Significance level for the target confidence interval calculation, defaults to 0.05
+        : type ci_significance: float, optional
+        : param colour_feature: Colour used for the feature plot, defaults to "grey"
+        : type colour_feature: str, optional
+        : param colour_target: Colour used for the target plot, defaults to "tab:blue"
+        : type colour_target: str, optional
+        """
+
         # calculate score
         if not hasattr(self, "score"):
             self.calculate_score()
@@ -129,6 +160,12 @@ class SingleDistribution:
             )
 
     def calculate_score(self):
+        """Calculate the score for the feature based on its predictive power or skewness.
+
+        If a target has been specified for the feature, the score is calculated based on the predictive power score
+        (PPS). Otherwise, the score is calculated based on the skewness of the median towards quartiles.
+        """
+
         if self.has_target:
             # calculate predictive power score
             self.score = pps.score(
@@ -147,6 +184,7 @@ class SingleDistribution:
             self.score = abs((median - middle)) / range_ / 2
 
     def summarise_feature(self):
+        """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
         # join feature and target intro single dataframe
         if self.has_target:
             self.__feature_summary = pd.concat([self.feature, self.target], axis=1)
@@ -184,6 +222,7 @@ class SingleDistribution:
     # feature getter
     @property
     def feature(self):
+        """The feature data"""
         return self.__feature
 
     # feature setter
@@ -206,6 +245,7 @@ class SingleDistribution:
     # target getter
     @property
     def target(self):
+        """The target data"""
         return self.__target
 
     # target setter
@@ -228,6 +268,7 @@ class SingleDistribution:
     # score getter
     @property
     def score(self):
+        """The score value"""
         return self.__score
 
     # score setter
@@ -249,11 +290,13 @@ class SingleDistribution:
     # missing proportion getter
     @property
     def missing_proportion(self):
+        """The proportion of values that are missing"""
         return self.__missing_proportion
 
     # convert to dataframe
     @staticmethod
     def to_dataframe(input):
+        """A method to convert inputs into a pandas series"""
         # extract original class name
         class_name = input.__class__.__name__
 
