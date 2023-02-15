@@ -1,6 +1,6 @@
-datavizml.datavizml module
---------------------------
+datavizml module
+================
 
-.. automodule:: datavizml.datavizml
+.. automodule:: datavizml
    :members:
    :show-inheritance:
