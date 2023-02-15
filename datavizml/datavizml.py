@@ -233,14 +233,8 @@ class SingleDistribution:
             raise AttributeError("This attribute has already been set")
 
         else:
-            # convert array to series
-            feature, class_name = self.to_dataframe(feature)
-
-            # only accept pandas series object
-            if isinstance(feature, pd.Series):
-                self.__feature = feature
-            else:
-                raise TypeError(f"feature is of {class_name} type which is not valid")
+            # convert to series and set
+            self.__feature = self.to_series(feature)
 
     # target getter
     @property
@@ -256,14 +250,8 @@ class SingleDistribution:
             raise AttributeError("This attribute has already been set")
 
         else:
-            # convert array to series
-            target, class_name = self.to_dataframe(target)
-
-            # only accept pandas series object
-            if isinstance(target, pd.Series):
-                self.__target = target
-            else:
-                raise TypeError(f"target is of {class_name} type which is not valid")
+            # convert to series and set
+            self.__target = self.to_series(target)
 
     # score getter
     @property
@@ -293,16 +281,22 @@ class SingleDistribution:
         """The proportion of values that are missing"""
         return self.__missing_proportion
 
-    # convert to dataframe
+    # convert to series
     @staticmethod
-    def to_dataframe(input):
+    def to_series(input):
         """A method to convert inputs into a pandas series"""
         # extract original class name
         class_name = input.__class__.__name__
 
         # convert array to series
         if isinstance(input, np.ndarray):
-            input = np.squeeze(input)
-            input = pd.Series(input, name="unnamed")
+            output = np.squeeze(input)
+            output = pd.Series(output, name="unnamed")
+        else:
+            output = input
 
-        return input, class_name
+        # only accept pandas series object
+        if isinstance(output, pd.Series):
+            return output
+        else:
+            raise TypeError(f"input is of {class_name} type which is not valid")
