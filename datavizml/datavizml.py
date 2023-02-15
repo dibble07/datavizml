@@ -234,7 +234,7 @@ class SingleDistribution:
 
         else:
             # convert to series and set
-            self.__feature = self.to_series(feature)
+            self.__feature = self.__to_series(feature)
 
     # target getter
     @property
@@ -251,7 +251,7 @@ class SingleDistribution:
 
         else:
             # convert to series and set
-            self.__target = self.to_series(target)
+            self.__target = self.__to_series(target)
 
     # score getter
     @property
@@ -283,7 +283,7 @@ class SingleDistribution:
 
     # convert to series
     @staticmethod
-    def to_series(input):
+    def __to_series(input):
         """A method to convert inputs into a pandas series"""
         # extract original class name
         class_name = input.__class__.__name__
