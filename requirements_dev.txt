@@ -1,4 +1,5 @@
 black[jupyter]==23.1.0
+myst-nb==0.17.1
 pip==23.0
 pre-commit==3.0.4
 pytest==4.3.0
