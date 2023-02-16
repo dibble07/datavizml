@@ -31,7 +31,7 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
       - name: Install self for testing
-      - run: |
+        run: |
           pip install -e .
       - name: Evaluate test coverage
         run: |
