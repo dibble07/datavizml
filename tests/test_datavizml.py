@@ -44,42 +44,42 @@ def test_prescribed_score():
     assert sd.score == 0.1
 
 
-# def test_single_with_boolean_pandas_with_target(capsys):
-#     # initialise inputs
-#     _, ax = plt.subplots()
-#     x = pd.Series(
-#         [False, False, True, np.nan] * 4,
-#         name="feature_test",
-#     )
-#     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
+def test_single_with_boolean_pandas_with_target(capsys):
+    # initialise inputs
+    _, ax = plt.subplots()
+    x = pd.Series(
+        [False, False, True, np.nan] * 4,
+        name="feature_test",
+    )
+    y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
 
-#     # initialise object
-#     sd = SingleDistribution(feature=x, ax=ax, target=y)
+    # initialise object
+    sd = SingleDistribution(feature=x, ax=ax, target=y)
 
-#     # check printing
-#     print(sd, end="")
-#     captured = capsys.readouterr()
-#     expected = "feature: feature_test, target: target_test, score: not calculated"
-#     assert expected == captured.out
+    # check printing
+    print(sd, end="")
+    captured = capsys.readouterr()
+    expected = "feature: feature_test, target: target_test, score: not calculated"
+    assert expected == captured.out
 
-#     # check missing proportion value
-#     assert sd.missing_proportion == 0.25
+    # check missing proportion value
+    assert sd.missing_proportion == 0.25
 
-#     # check inability to reset values
-#     with pytest.raises(AttributeError):
-#         sd.target = y
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        sd.target = y
 
-#     # call object
-#     sd()
+    # call object
+    sd()
 
-#     # check printing
-#     print(sd, end="")
-#     captured = capsys.readouterr()
-#     expected = "feature: feature_test, target: target_test, score: 1.0"
-#     assert expected == captured.out
+    # check printing
+    print(sd, end="")
+    captured = capsys.readouterr()
+    expected = "feature: feature_test, target: target_test, score: 1.0"
+    assert expected == captured.out
 
-#     # check score
-#     assert sd.score == 1.0
+    # check score
+    assert sd.score == 1.0
 
 
 def test_single_with_interger_array_without_target(capsys):
