@@ -130,3 +130,4 @@ dmypy.json
 
 # user defined file
 .pre-commit-config.yaml
+.coveralls.yaml
