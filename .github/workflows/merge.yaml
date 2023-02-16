@@ -1,12 +1,12 @@
-name: Pull request workflow
-run-name: ${{ github.actor }} is running the pull request workflow
+name: Merge workflow
+run-name: ${{ github.actor }} is running the merge workflow
 on:
-  pull_request:
-    branches:    
+  push:
+    branches:   
       - main
   workflow_dispatch:
 jobs:
-  format-and-test:
+  evluate_test_coverage:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,11 +20,9 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements_dev.txt
           pip install -e .
-      - name: Check formatting
-        uses: psf/black@stable
-        with:
-          options: "--check --diff --color"
-          jupyter: true
-      - name: Test with pytest
+      - name: Evaluate test coverage
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pytest
+          coverage run -m pytest
+          coveralls --service=github
