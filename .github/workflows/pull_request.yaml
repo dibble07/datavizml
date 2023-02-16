@@ -16,9 +16,11 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements_dev.txt
           pip install -e .
-      - name: Format with black
-        run: |
-          black .
+      - name: Check formatting
+        uses: psf/black@stable
+        with:
+          options: "--check --diff --color"
+          jupyter: true
       - name: Test with pytest
         run: |
           pytest
