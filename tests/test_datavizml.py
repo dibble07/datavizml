@@ -20,7 +20,7 @@ def test_single_with_list():
         SingleDistribution(feature=x_array, ax=ax, target=y_list)
 
 
-def test_prescribed_score():
+def test_single_prescribed_score():
     # initialise inputs
     _, ax = plt.subplots()
     x = pd.Series(
@@ -114,3 +114,35 @@ def test_single_with_interger_array_without_target(capsys):
 
     # check score
     assert sd.score == 0.0
+
+
+def test_single_with_float_pandas_with_target(capsys):
+    # initialise inputs
+    _, ax = plt.subplots()
+    x = pd.Series(
+        [x - 10 for x in range(5)] * 10 + [np.nan],
+        name="feature_test",
+    )
+    y = x * x
+    y.name = "target_test"
+
+    # initialise object
+    sd = SingleDistribution(feature=x, ax=ax, target=y)
+
+    # check printing
+    print(sd, end="")
+    captured = capsys.readouterr()
+    expected = "feature: feature_test, target: target_test, score: not calculated"
+    assert expected == captured.out
+
+    # call object
+    sd()
+
+    # check printing
+    print(sd, end="")
+    captured = capsys.readouterr()
+    expected = "feature: feature_test, target: target_test, score: 1.0"
+    assert expected == captured.out
+
+    # check score
+    assert sd.score == 1.0
