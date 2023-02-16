@@ -1,7 +1,7 @@
 # DataVizML
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Coverage Status](https://coveralls.io/repos/github/dibble07/datavizml/badge.svg?branch=main)](https://coveralls.io/github/dibble07/datavizml?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/dibble07/datavizml/badge.svg?branch=main&kill_cache=1)](https://coveralls.io/github/dibble07/datavizml?branch=main&kill_cache=1)
 [![Documentation Status](https://readthedocs.org/projects/datavizml/badge/?version=latest)](https://datavizml.readthedocs.io/en/latest/?badge=latest)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/datavizml)
 
