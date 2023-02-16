@@ -5,43 +5,43 @@ import pandas as pd
 import pytest
 
 
-# def test_single_with_list():
-# # initialise inputs
-# _, ax = plt.subplots()
-# x_list = [1, 2]
-# y_list = [0, 1]
-# x_array = np.array([1, 2])
-# y_array = np.array([0, 1])
+def test_single_with_list():
+    # initialise inputs
+    _, ax = plt.subplots()
+    x_list = [1, 2]
+    y_list = [0, 1]
+    x_array = np.array([1, 2])
+    y_array = np.array([0, 1])
 
-# # check inability to initiate with lists
-# with pytest.raises(TypeError):
-#     SingleDistribution(feature=x_list, ax=ax, target=y_array)
-# with pytest.raises(TypeError):
-#     SingleDistribution(feature=x_array, ax=ax, target=y_list)
+    # check inability to initiate with lists
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=x_list, ax=ax, target=y_array)
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=x_array, ax=ax, target=y_list)
 
 
-# def test_prescribed_score():
-#     # initialise inputs
-#     _, ax = plt.subplots()
-#     x = pd.Series(
-#         [1, 1, 2, np.nan] * 4,
-#         name="feature_test",
-#     )
-#     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
+def test_prescribed_score():
+    # initialise inputs
+    _, ax = plt.subplots()
+    x = pd.Series(
+        [1, 1, 2, np.nan] * 4,
+        name="feature_test",
+    )
+    y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
 
-#     # check inability to initiate with score value as string
-#     with pytest.raises(TypeError):
-#         SingleDistribution(feature=x, ax=ax, target=y, score="0.1")
+    # check inability to initiate with score value as string
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=x, ax=ax, target=y, score="0.1")
 
-#     # initialise object
-#     sd = SingleDistribution(feature=x, ax=ax, target=y, score=0.1)
+    # initialise object
+    sd = SingleDistribution(feature=x, ax=ax, target=y, score=0.1)
 
-#     # check inability to reset values
-#     with pytest.raises(AttributeError):
-#         sd.score = 0.2
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        sd.score = 0.2
 
-# # check score value
-# assert sd.score == 0.1
+    # check score value
+    assert sd.score == 0.1
 
 
 # def test_single_with_boolean_pandas_with_target(capsys):
