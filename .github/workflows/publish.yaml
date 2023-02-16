@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: 3.8
       - name: Install dependencies for build
-      - run: |
+        run: |
           pip install --upgrade pip
           pip install -r requirements_dev.txt
           python3 -m build
