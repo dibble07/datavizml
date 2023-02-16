@@ -21,6 +21,9 @@ jobs:
         with:
           options: "--check --diff --color"
           jupyter: true
-      - name: Test with pytest
+      - name: Test with pytest and evaluate coverage
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pytest
+          coverage run -m pytest
+          coveralls --service=github

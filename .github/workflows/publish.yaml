@@ -30,12 +30,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-      - name: Install self for testing
-        run: |
-          pip install -e .
-      - name: Evaluate test coverage
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          coverage run -m pytest
-          coveralls --service=github
