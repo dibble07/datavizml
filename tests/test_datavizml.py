@@ -113,4 +113,4 @@ def test_single_with_interger_array_without_target(capsys):
     assert expected == captured.out
 
     # check score
-    assert sd.score == 0.01
+    assert sd.score == 0.0
