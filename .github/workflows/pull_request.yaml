@@ -21,4 +21,4 @@ jobs:
           black .
       - name: Test with pytest
         run: |
-          pytest --cov=datavizml
+          pytest
