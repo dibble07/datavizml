@@ -3,6 +3,7 @@ run-name: ${{ github.actor }} is running the publish workflow
 on:
   release:
     types: [published]
+  workflow_dispatch:
 jobs:
   pypi:
     runs-on: ubuntu-latest
