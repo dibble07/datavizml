@@ -42,7 +42,14 @@ class SingleDistribution:
             else SingleDistribution.BINNING_THRESHOLD_DEFAULT
         )
 
-        # supplementary/reusable variables
+        # check input
+        if self.has_target:
+            if self.feature.shape[0] != self.target.shape[0]:
+                raise ValueError(
+                    f"Dimension mismatch, feature has {self.feature.shape[0]} elements but the target has {self.target.shape[0]}"
+                )
+
+        # classify inputs
         (
             self.feature_is_bool,
             self.feature_is_numeric,
@@ -58,6 +65,8 @@ class SingleDistribution:
                 self.target_type = "regression"
             else:
                 self.target_type = "classification"
+
+        # supplementary/reusable variables
         missing_proportion = self.feature.isna().value_counts(normalize=True)
         self.__missing_proportion = (
             missing_proportion[True] if True in missing_proportion.index else 0
@@ -337,6 +346,9 @@ class SingleDistribution:
         # convert array to series
         if isinstance(input, np.ndarray):
             output = np.squeeze(input)
+            ndim = output.ndim
+            if ndim > 1:
+                raise ValueError(f"Input has {ndim} dimensions but only 1 is allowed")
             output = pd.Series(output, name="unnamed")
         else:
             output = input
@@ -345,7 +357,7 @@ class SingleDistribution:
         if isinstance(output, pd.Series):
             return output
         else:
-            raise TypeError(f"input is of {class_name} type which is not valid")
+            raise TypeError(f"Input is of {class_name} type which is not valid")
 
     # classify type of data
     @staticmethod
