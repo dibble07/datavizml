@@ -42,7 +42,14 @@ class SingleDistribution:
             else SingleDistribution.BINNING_THRESHOLD_DEFAULT
         )
 
-        # supplementary/reusable variables
+        # check input
+        if self.has_target:
+            if self.feature.shape[0] != self.target.shape[0]:
+                raise ValueError(
+                    f"Dimension mismatch, feature has {self.feature.shape[0]} elements but the target has {self.target.shape[0]}"
+                )
+
+        # classify inputs
         (
             self.feature_is_bool,
             self.feature_is_numeric,
@@ -58,6 +65,8 @@ class SingleDistribution:
                 self.target_type = "regression"
             else:
                 self.target_type = "classification"
+
+        # supplementary/reusable variables
         missing_proportion = self.feature.isna().value_counts(normalize=True)
         self.__missing_proportion = (
             missing_proportion[True] if True in missing_proportion.index else 0
