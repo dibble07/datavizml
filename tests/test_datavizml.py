@@ -12,12 +12,17 @@ def test_single_with_list():
     y_list = [0, 1]
     x_array = np.array([1, 2])
     y_array = np.array([0, 1])
+    y_array_long = np.array([0, 1, 2])
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
         SingleDistribution(feature=x_list, ax=ax, target=y_array)
     with pytest.raises(TypeError):
         SingleDistribution(feature=x_array, ax=ax, target=y_list)
+
+    # check inability to initiate with unevenly sized inputs
+    with pytest.raises(ValueError):
+        SingleDistribution(feature=x_array, ax=ax, target=y_array_long)
 
 
 def test_single_prescribed_score():
@@ -86,6 +91,11 @@ def test_single_with_interger_array_without_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
     x = np.array(list(range(16 - 1)) + [np.nan]) * 1000
+    x_fail = np.repeat(x.reshape(-1, 1), 3, axis=1)
+
+    # check inability to reset values
+    with pytest.raises(ValueError):
+        SingleDistribution(feature=x_fail, ax=ax)
 
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax)
