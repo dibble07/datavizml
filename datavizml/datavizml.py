@@ -42,9 +42,17 @@ class SingleDistribution:
         )
 
         # supplementary/reusable variables
-        feature_no_null = self.feature.dropna().convert_dtypes()
-        self.is_bool = pd.api.types.is_bool_dtype(feature_no_null)
-        self.is_numeric = pd.api.types.is_numeric_dtype(feature_no_null)
+        self.feature_is_bool, self.feature_is_numeric = self.__classify_type(
+            self.feature
+        )
+        if self.has_target:
+            self.target_is_bool, self.target_is_numeric = self.__classify_type(
+                self.target
+            )
+            if self.target_is_numeric:
+                self.target_type = "regression"
+            else:
+                self.target_type = "classification"
         missing_proportion = self.feature.isna().value_counts(normalize=True)
         self.__missing_proportion = (
             missing_proportion[True] if True in missing_proportion.index else 0
@@ -60,11 +68,15 @@ class SingleDistribution:
         """
 
         # conditional strings
-        target_val = self.target.name if self.has_target else "no target provided"
+        target_val = (
+            f"{self.target.name} ({self.target.dtype} - {self.target_type.replace('_',' ').title()})"
+            if self.has_target
+            else "no target provided"
+        )
         score_val = self.score if hasattr(self, "score") else "not calculated"
 
         # attribute related strings
-        feature_str = f"feature: {self.feature.name}"
+        feature_str = f"feature: {self.feature.name} ({self.feature.dtype})"
         target_str = f"target: {target_val}"
         score_str = f"score: {score_val}"
 
@@ -130,7 +142,7 @@ class SingleDistribution:
 
         # decorate x axis
         self.ax_feature.set_xlabel(self.feature.name)
-        if self.is_numeric and not self.is_bool:
+        if self.feature_is_numeric and not self.feature_is_bool:
             _, ax_max = self.ax_feature.get_xlim()
             if ax_max > 1000:
                 self.ax_feature.xaxis.set_major_formatter(
@@ -192,7 +204,7 @@ class SingleDistribution:
             self.__feature_summary = self.feature.to_frame()
 
         # bin target variable if there are too many distinct values
-        if self.feature.nunique() > self.binning_threshold and self.is_numeric:
+        if self.feature.nunique() > self.binning_threshold and self.feature_is_numeric:
             bin_boundaries = np.linspace(
                 self.feature.min(), self.feature.max(), self.binning_threshold + 1
             )
@@ -214,7 +226,7 @@ class SingleDistribution:
             )
 
         # convert index to string from boolean for printing purposes
-        if self.is_bool:
+        if self.feature_is_bool:
             self.__feature_summary.index = self.__feature_summary.index.map(
                 {True: "True", False: "False"}
             )
@@ -300,3 +312,13 @@ class SingleDistribution:
             return output
         else:
             raise TypeError(f"input is of {class_name} type which is not valid")
+
+    # classify type of data
+    @staticmethod
+    def __classify_type(input):
+        """A method to classify pandas series"""
+        # drop null values
+        no_null = input.dropna().convert_dtypes()
+        is_bool = pd.api.types.feature_is_bool_dtype(no_null)
+        is_numeric = pd.api.types.feature_is_numeric_dtype(no_null)
+        return is_bool, is_numeric
