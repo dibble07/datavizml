@@ -1,4 +1,4 @@
-from matplotlib import cm
+import matplotlib
 from matplotlib import ticker
 import numpy as np
 import pandas as pd
@@ -114,7 +114,7 @@ class SingleDistribution:
         """
 
         # load colourmap
-        self.__cmap = cm.get_cmap(colourmap_target)
+        self.__cmap = matplotlib.colormaps[colourmap_target]
 
         # calculate score
         if not hasattr(self, "score"):
@@ -142,6 +142,7 @@ class SingleDistribution:
 
             # classification specific calculations
             elif self.target_type == "classification":
+                # calculate values for each class
                 ci_diff_all = {}
                 y_plot_all = {}
                 for class_name, values in self.__feature_summary.drop(
@@ -160,6 +161,11 @@ class SingleDistribution:
                         )
                     )
                     y_plot_all[class_name] = mean * 100
+
+                # drop false class for boolean
+                if self.target_is_bool:
+                    ci_diff_all.pop(False)
+                    y_plot_all.pop(False)
 
             # plot errorbars
             for (class_name, ci_diff), (_, y_plot), colour_target in zip(
@@ -198,12 +204,17 @@ class SingleDistribution:
 
         # decorate second y axis
         if self.has_target:
-            twin_y_colour = "k" if len(y_plot_all) > 1 else colour_target
+            twin_y_colour = (
+                "k"
+                if len(y_plot_all) > 1 and not self.target_is_bool
+                else colour_target
+            )
             self.ax_target.set_ylabel(self.target.name, color=twin_y_colour)
             self.ax_target.tick_params(axis="y", labelcolor=twin_y_colour)
             if self.target_type == "classification":
                 self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
-                self.ax_target.legend()
+                if not self.target_is_bool:
+                    self.ax_target.legend()
 
         # add title
         self.ax_feature.set_title(
