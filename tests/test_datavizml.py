@@ -44,14 +44,14 @@ def test_single_prescribed_score():
     assert sd.score == 0.1
 
 
-def test_single_with_boolean_pandas_with_target(capsys):
+def test_single_with_boolean_pandas_with_boolean_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
     x = pd.Series(
         [False, False, True, np.nan] * 4,
         name="feature_test",
     )
-    y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
+    y = pd.Series([True, True, False, False] * 4, name="target_test")
 
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax, target=y)
@@ -59,7 +59,7 @@ def test_single_with_boolean_pandas_with_target(capsys):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = "feature: feature_test, target: target_test, score: not calculated"
+    expected = "feature: feature_test (boolean), target: target_test (boolean - Classification), score: not calculated"
     assert expected == captured.out
 
     # check missing proportion value
@@ -75,7 +75,7 @@ def test_single_with_boolean_pandas_with_target(capsys):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = "feature: feature_test, target: target_test, score: 1.0"
+    expected = "feature: feature_test (boolean), target: target_test (boolean - Classification), score: 1.0"
     assert expected == captured.out
 
     # check score
@@ -93,7 +93,9 @@ def test_single_with_interger_array_without_target(capsys):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = "feature: unnamed, target: no target provided, score: not calculated"
+    expected = (
+        "feature: unnamed (Int64), target: no target provided, score: not calculated"
+    )
     assert expected == captured.out
 
     # check missing proportion value
@@ -109,18 +111,18 @@ def test_single_with_interger_array_without_target(capsys):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = "feature: unnamed, target: no target provided, score: 0.0"
+    expected = "feature: unnamed (Int64), target: no target provided, score: 0.0"
     assert expected == captured.out
 
     # check score
     assert sd.score == 0.0
 
 
-def test_single_with_float_pandas_with_target(capsys):
+def test_single_with_float_pandas_with_float_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
     x = pd.Series(
-        [x - 10 for x in range(5)] * 10 + [np.nan],
+        [(x - 10) / 2 for x in range(20)] * 10 + [np.nan],
         name="feature_test",
     )
     y = x * x
@@ -132,7 +134,7 @@ def test_single_with_float_pandas_with_target(capsys):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = "feature: feature_test, target: target_test, score: not calculated"
+    expected = "feature: feature_test (Float64), target: target_test (Float64 - Regression), score: not calculated"
     assert expected == captured.out
 
     # call object
@@ -141,7 +143,7 @@ def test_single_with_float_pandas_with_target(capsys):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = "feature: feature_test, target: target_test, score: 1.0"
+    expected = "feature: feature_test (Float64), target: target_test (Float64 - Regression), score: 1.0"
     assert expected == captured.out
 
     # check score

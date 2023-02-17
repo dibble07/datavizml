@@ -43,13 +43,17 @@ class SingleDistribution:
         )
 
         # supplementary/reusable variables
-        self.feature_is_bool, self.feature_is_numeric = self.__classify_type(
-            self.feature
-        )
+        (
+            self.feature_is_bool,
+            self.feature_is_numeric,
+            self.feature_dtype,
+        ) = self.__classify_type(self.feature)
         if self.has_target:
-            self.target_is_bool, self.target_is_numeric = self.__classify_type(
-                self.target
-            )
+            (
+                self.target_is_bool,
+                self.target_is_numeric,
+                self.target_dtype,
+            ) = self.__classify_type(self.target)
             if self.target_is_numeric and not self.target_is_bool:
                 self.target_type = "regression"
             else:
@@ -70,14 +74,14 @@ class SingleDistribution:
 
         # conditional strings
         target_val = (
-            f"{self.target.name} ({self.target.dtype} - {self.target_type.replace('_',' ').title()})"
+            f"{self.target.name} ({self.target_dtype} - {self.target_type.replace('_',' ').title()})"
             if self.has_target
             else "no target provided"
         )
         score_val = self.score if hasattr(self, "score") else "not calculated"
 
         # attribute related strings
-        feature_str = f"feature: {self.feature.name} ({self.feature.dtype})"
+        feature_str = f"feature: {self.feature.name} ({self.feature_dtype})"
         target_str = f"target: {target_val}"
         score_str = f"score: {score_val}"
 
@@ -120,9 +124,7 @@ class SingleDistribution:
             # regression specific calculations
             if self.target_type == "regression":
                 z_crit = scipy.stats.norm.ppf(1 - ci_significance / 2)
-                print(z_crit)
                 ci_diff = self.__feature_summary["std"] * z_crit
-                print(ci_diff)
                 y_plot = self.__feature_summary["mean"]
 
             # classification specific calculations
@@ -333,4 +335,4 @@ class SingleDistribution:
         no_null = input.dropna().convert_dtypes()
         is_bool = pd.api.types.is_bool_dtype(no_null)
         is_numeric = pd.api.types.is_numeric_dtype(no_null)
-        return is_bool, is_numeric
+        return is_bool, is_numeric, no_null.dtype
