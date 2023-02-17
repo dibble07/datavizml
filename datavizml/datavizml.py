@@ -2,6 +2,7 @@ from matplotlib import ticker
 import numpy as np
 import pandas as pd
 import ppscore as pps
+import scipy
 from statsmodels.stats.proportion import proportion_confint
 
 
@@ -49,7 +50,7 @@ class SingleDistribution:
             self.target_is_bool, self.target_is_numeric = self.__classify_type(
                 self.target
             )
-            if self.target_is_numeric:
+            if self.target_is_numeric and not self.target_is_bool:
                 self.target_type = "regression"
             else:
                 self.target_type = "classification"
@@ -114,23 +115,36 @@ class SingleDistribution:
         stemlines.set_color(colour_feature)
         baseline.set_color(colour_feature)
 
-        # plot target proportion
+        # plot target values and uncertainty
         if self.has_target:
-            ci_lo, ci_hi = proportion_confint(
-                self.__feature_summary["mean"] * self.__feature_summary["count"],
-                self.__feature_summary["count"],
-                ci_significance,
-            )
-            ci_diff = np.concatenate(
-                (
-                    (self.__feature_summary["mean"] - ci_lo).values.reshape(1, -1),
-                    (ci_hi - self.__feature_summary["mean"]).values.reshape(1, -1),
+            # regression specific calculations
+            if self.target_type == "regression":
+                z_crit = scipy.stats.norm.ppf(1 - ci_significance / 2)
+                print(z_crit)
+                ci_diff = self.__feature_summary["std"] * z_crit
+                print(ci_diff)
+                y_plot = self.__feature_summary["mean"]
+
+            # classification specific calculations
+            elif self.target_type == "classification":
+                ci_lo, ci_hi = proportion_confint(
+                    self.__feature_summary["mean"] * self.__feature_summary["count"],
+                    self.__feature_summary["count"],
+                    ci_significance,
                 )
-            )
+                ci_diff = 100 * np.concatenate(
+                    (
+                        (self.__feature_summary["mean"] - ci_lo).values.reshape(1, -1),
+                        (ci_hi - self.__feature_summary["mean"]).values.reshape(1, -1),
+                    )
+                )
+                y_plot = self.__feature_summary["mean"] * 100
+
+            # plot errorbars
             self.ax_target.errorbar(
                 self.__feature_summary.index,
-                self.__feature_summary["mean"] * 100,
-                yerr=ci_diff * 100,
+                y_plot,
+                yerr=ci_diff,
                 color=colour_target,
                 elinewidth=2,
                 capsize=3,
@@ -159,7 +173,8 @@ class SingleDistribution:
         if self.has_target:
             self.ax_target.set_ylabel(self.target.name, color=colour_target)
             self.ax_target.tick_params(axis="y", labelcolor=colour_target)
-            self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
+            if self.target_type == "classification":
+                self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
 
         # add title
         self.ax_feature.set_title(
