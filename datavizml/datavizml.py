@@ -1,3 +1,4 @@
+from matplotlib import cm
 from matplotlib import ticker
 import numpy as np
 import pandas as pd
@@ -24,7 +25,7 @@ class SingleDistribution:
     BINNING_THRESHOLD_DEFAULT = 12  # distinct values for binning
     CI_SIGNIFICANCE_DEFAULT = 0.05  # confidence interval significance
     COLOUR_FEATURE_DEFAULT = "grey"  # colour used for feature
-    COLOUR_TARGET_DEFAULT = "tab:blue"  # colour used for target
+    COLOURMAP_TARGET_DEFAULT = "tab10"  # colour map used for target
 
     def __init__(self, feature, ax, target=False, score=False, binning_threshold=False):
         """Constructor method"""
@@ -100,7 +101,7 @@ class SingleDistribution:
         self,
         ci_significance=CI_SIGNIFICANCE_DEFAULT,
         colour_feature=COLOUR_FEATURE_DEFAULT,
-        colour_target=COLOUR_TARGET_DEFAULT,
+        colourmap_target=COLOURMAP_TARGET_DEFAULT,
     ):
         """Generates and decorates the plot
 
@@ -108,9 +109,12 @@ class SingleDistribution:
         : type ci_significance: float, optional
         : param colour_feature: Colour used for the feature plot, defaults to "grey"
         : type colour_feature: str, optional
-        : param colour_target: Colour used for the target plot, defaults to "tab:blue"
-        : type colour_target: str, optional
+        : param colourmap_target: Colour map used for the target plot, defaults to "tab10"
+        : type colourmap_target: str, optional
         """
+
+        # load colourmap
+        self.__cmap = cm.get_cmap(colourmap_target)
 
         # calculate score
         if not hasattr(self, "score"):
@@ -158,8 +162,10 @@ class SingleDistribution:
                     y_plot_all[class_name] = mean * 100
 
             # plot errorbars
-            for (class_name, ci_diff), (_, y_plot) in zip(
-                ci_diff_all.items(), y_plot_all.items()
+            for (class_name, ci_diff), (_, y_plot), colour_target in zip(
+                ci_diff_all.items(),
+                y_plot_all.items(),
+                [self.__cmap(i) for i in range(len(y_plot_all))],
             ):
                 self.ax_target.errorbar(
                     self.__feature_summary.index,
@@ -169,6 +175,7 @@ class SingleDistribution:
                     elinewidth=2,
                     capsize=3,
                     capthick=2,
+                    label=class_name,
                     ls="",
                     marker="D",
                     markersize=3,
@@ -191,10 +198,12 @@ class SingleDistribution:
 
         # decorate second y axis
         if self.has_target:
-            self.ax_target.set_ylabel(self.target.name, color=colour_target)
-            self.ax_target.tick_params(axis="y", labelcolor=colour_target)
+            twin_y_colour = "k" if len(y_plot_all) > 1 else colour_target
+            self.ax_target.set_ylabel(self.target.name, color=twin_y_colour)
+            self.ax_target.tick_params(axis="y", labelcolor=twin_y_colour)
             if self.target_type == "classification":
                 self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
+                self.ax_target.legend()
 
         # add title
         self.ax_feature.set_title(
