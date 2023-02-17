@@ -1,3 +1,4 @@
+import matplotlib
 from matplotlib import ticker
 import numpy as np
 import pandas as pd
@@ -24,7 +25,7 @@ class SingleDistribution:
     BINNING_THRESHOLD_DEFAULT = 12  # distinct values for binning
     CI_SIGNIFICANCE_DEFAULT = 0.05  # confidence interval significance
     COLOUR_FEATURE_DEFAULT = "grey"  # colour used for feature
-    COLOUR_TARGET_DEFAULT = "tab:blue"  # colour used for target
+    COLOURMAP_TARGET_DEFAULT = "tab10"  # colour map used for target
 
     def __init__(self, feature, ax, target=False, score=False, binning_threshold=False):
         """Constructor method"""
@@ -100,7 +101,7 @@ class SingleDistribution:
         self,
         ci_significance=CI_SIGNIFICANCE_DEFAULT,
         colour_feature=COLOUR_FEATURE_DEFAULT,
-        colour_target=COLOUR_TARGET_DEFAULT,
+        colourmap_target=COLOURMAP_TARGET_DEFAULT,
     ):
         """Generates and decorates the plot
 
@@ -108,9 +109,12 @@ class SingleDistribution:
         : type ci_significance: float, optional
         : param colour_feature: Colour used for the feature plot, defaults to "grey"
         : type colour_feature: str, optional
-        : param colour_target: Colour used for the target plot, defaults to "tab:blue"
-        : type colour_target: str, optional
+        : param colourmap_target: Colour map used for the target plot, defaults to "tab10"
+        : type colourmap_target: str, optional
         """
+
+        # load colourmap
+        self.__cmap = matplotlib.colormaps[colourmap_target]
 
         # calculate score
         if not hasattr(self, "score"):
@@ -133,37 +137,55 @@ class SingleDistribution:
             # regression specific calculations
             if self.target_type == "regression":
                 z_crit = scipy.stats.norm.ppf(1 - ci_significance / 2)
-                ci_diff = self.__feature_summary["std"] * z_crit
-                y_plot = self.__feature_summary["mean"]
+                ci_diff_all = {None: self.__feature_summary["std"] * z_crit}
+                y_plot_all = {None: self.__feature_summary["mean"]}
 
             # classification specific calculations
             elif self.target_type == "classification":
-                ci_lo, ci_hi = proportion_confint(
-                    self.__feature_summary["mean"] * self.__feature_summary["count"],
-                    self.__feature_summary["count"],
-                    ci_significance,
-                )
-                ci_diff = 100 * np.concatenate(
-                    (
-                        (self.__feature_summary["mean"] - ci_lo).values.reshape(1, -1),
-                        (ci_hi - self.__feature_summary["mean"]).values.reshape(1, -1),
+                # calculate values for each class
+                ci_diff_all = {}
+                y_plot_all = {}
+                for class_name, values in self.__feature_summary.drop(
+                    columns="count"
+                ).items():
+                    mean = values / self.__feature_summary["count"]
+                    ci_lo, ci_hi = proportion_confint(
+                        values,
+                        self.__feature_summary["count"],
+                        ci_significance,
                     )
-                )
-                y_plot = self.__feature_summary["mean"] * 100
+                    ci_diff_all[class_name] = 100 * np.concatenate(
+                        (
+                            (mean - ci_lo).values.reshape(1, -1),
+                            (ci_hi - mean).values.reshape(1, -1),
+                        )
+                    )
+                    y_plot_all[class_name] = mean * 100
+
+                # drop false class for boolean
+                if self.target_is_bool:
+                    ci_diff_all.pop(False)
+                    y_plot_all.pop(False)
 
             # plot errorbars
-            self.ax_target.errorbar(
-                self.__feature_summary.index,
-                y_plot,
-                yerr=ci_diff,
-                color=colour_target,
-                elinewidth=2,
-                capsize=3,
-                capthick=2,
-                ls="",
-                marker="D",
-                markersize=3,
-            )
+            for (class_name, ci_diff), (_, y_plot), colour_target in zip(
+                ci_diff_all.items(),
+                y_plot_all.items(),
+                [self.__cmap(i) for i in range(len(y_plot_all))],
+            ):
+                self.ax_target.errorbar(
+                    self.__feature_summary.index,
+                    y_plot,
+                    yerr=ci_diff,
+                    color=colour_target,
+                    elinewidth=2,
+                    capsize=3,
+                    capthick=2,
+                    label=class_name,
+                    ls="",
+                    marker="D",
+                    markersize=3,
+                )
 
         # decorate x axis
         self.ax_feature.set_xlabel(self.feature.name)
@@ -182,10 +204,17 @@ class SingleDistribution:
 
         # decorate second y axis
         if self.has_target:
-            self.ax_target.set_ylabel(self.target.name, color=colour_target)
-            self.ax_target.tick_params(axis="y", labelcolor=colour_target)
+            twin_y_colour = (
+                "k"
+                if len(y_plot_all) > 1 and not self.target_is_bool
+                else colour_target
+            )
+            self.ax_target.set_ylabel(self.target.name, color=twin_y_colour)
+            self.ax_target.tick_params(axis="y", labelcolor=twin_y_colour)
             if self.target_type == "classification":
                 self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
+                if not self.target_is_bool:
+                    self.ax_target.legend()
 
         # add title
         self.ax_feature.set_title(
@@ -222,28 +251,39 @@ class SingleDistribution:
         """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
         # join feature and target intro single dataframe
         if self.has_target:
-            self.__feature_summary = pd.concat([self.feature, self.target], axis=1)
+            all_data = pd.concat([self.feature, self.target], axis=1)
         else:
-            self.__feature_summary = self.feature.to_frame()
+            all_data = self.feature.to_frame()
 
         # bin target variable if there are too many distinct values
         if self.feature.nunique() > self.binning_threshold and self.feature_is_numeric:
             bin_boundaries = np.linspace(
                 self.feature.min(), self.feature.max(), self.binning_threshold + 1
             )
-            self.__feature_summary[self.feature.name] = pd.cut(
-                self.feature, bin_boundaries
-            ).apply(lambda x: x.mid)
+            all_data[self.feature.name] = pd.cut(self.feature, bin_boundaries).apply(
+                lambda x: x.mid
+            )
+
         # calculate summary statistics for each distinct target variable
         if self.has_target:
-            self.__feature_summary = self.__feature_summary.groupby(
-                self.feature.name
-            ).agg({"count", "mean", "std"})
-            self.__feature_summary.columns = self.__feature_summary.columns.droplevel()
+            if self.target_type == "regression":
+                self.__feature_summary = all_data.groupby(self.feature.name).agg(
+                    {"count", "mean", "std"}
+                )
+                self.__feature_summary.columns = (
+                    self.__feature_summary.columns.droplevel()
+                )
+            elif self.target_type == "classification":
+                self.__feature_summary = pd.pivot_table(
+                    all_data.value_counts().to_frame("count"),
+                    values="count",
+                    index=self.feature.name,
+                    columns=self.target.name,
+                    fill_value=0,
+                )
+                self.__feature_summary["count"] = self.__feature_summary.sum(axis=1)
         else:
-            self.__feature_summary = self.__feature_summary.value_counts().to_frame(
-                "count"
-            )
+            self.__feature_summary = all_data.value_counts().to_frame("count")
             self.__feature_summary.index = self.__feature_summary.index.map(
                 lambda x: x[0]
             )

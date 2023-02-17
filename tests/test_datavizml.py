@@ -87,6 +87,44 @@ def test_single_with_boolean_pandas_with_boolean_target(capsys):
     assert sd.score == 1.0
 
 
+def test_single_with_boolean_pandas_with_string_target(capsys):
+    # initialise inputs
+    _, ax = plt.subplots()
+    x = pd.Series(
+        [False, False, True, np.nan] * 4,
+        name="feature_test",
+    )
+    y = pd.Series(["one", "one", "two", "two"] * 4, name="target_test")
+
+    # initialise object
+    sd = SingleDistribution(feature=x, ax=ax, target=y)
+
+    # check printing
+    print(sd, end="")
+    captured = capsys.readouterr()
+    expected = "feature: feature_test (boolean), target: target_test (string - Classification), score: not calculated"
+    assert expected == captured.out
+
+    # check missing proportion value
+    assert sd.missing_proportion == 0.25
+
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        sd.target = y
+
+    # call object
+    sd()
+
+    # check printing
+    print(sd, end="")
+    captured = capsys.readouterr()
+    expected = "feature: feature_test (boolean), target: target_test (string - Classification), score: 1.0"
+    assert expected == captured.out
+
+    # check score
+    assert sd.score == 1.0
+
+
 def test_single_with_interger_array_without_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
