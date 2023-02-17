@@ -254,9 +254,7 @@ class SingleDistribution:
                 )
                 self.__feature_summary["count"] = self.__feature_summary.sum(axis=1)
         else:
-            self.__feature_summary = self.__feature_summary.value_counts().to_frame(
-                "count"
-            )
+            self.__feature_summary = all_data.value_counts().to_frame("count")
             self.__feature_summary.index = self.__feature_summary.index.map(
                 lambda x: x[0]
             )
