@@ -2,6 +2,7 @@ from matplotlib import ticker
 import numpy as np
 import pandas as pd
 import ppscore as pps
+import scipy
 from statsmodels.stats.proportion import proportion_confint
 
 
@@ -42,9 +43,21 @@ class SingleDistribution:
         )
 
         # supplementary/reusable variables
-        feature_no_null = self.feature.dropna().convert_dtypes()
-        self.is_bool = pd.api.types.is_bool_dtype(feature_no_null)
-        self.is_numeric = pd.api.types.is_numeric_dtype(feature_no_null)
+        (
+            self.feature_is_bool,
+            self.feature_is_numeric,
+            self.feature_dtype,
+        ) = self.__classify_type(self.feature)
+        if self.has_target:
+            (
+                self.target_is_bool,
+                self.target_is_numeric,
+                self.target_dtype,
+            ) = self.__classify_type(self.target)
+            if self.target_is_numeric and not self.target_is_bool:
+                self.target_type = "regression"
+            else:
+                self.target_type = "classification"
         missing_proportion = self.feature.isna().value_counts(normalize=True)
         self.__missing_proportion = (
             missing_proportion[True] if True in missing_proportion.index else 0
@@ -60,11 +73,15 @@ class SingleDistribution:
         """
 
         # conditional strings
-        target_val = self.target.name if self.has_target else "no target provided"
+        target_val = (
+            f"{self.target.name} ({self.target_dtype} - {self.target_type.replace('_',' ').title()})"
+            if self.has_target
+            else "no target provided"
+        )
         score_val = self.score if hasattr(self, "score") else "not calculated"
 
         # attribute related strings
-        feature_str = f"feature: {self.feature.name}"
+        feature_str = f"feature: {self.feature.name} ({self.feature_dtype})"
         target_str = f"target: {target_val}"
         score_str = f"score: {score_val}"
 
@@ -102,23 +119,34 @@ class SingleDistribution:
         stemlines.set_color(colour_feature)
         baseline.set_color(colour_feature)
 
-        # plot target proportion
+        # plot target values and uncertainty
         if self.has_target:
-            ci_lo, ci_hi = proportion_confint(
-                self.__feature_summary["mean"] * self.__feature_summary["count"],
-                self.__feature_summary["count"],
-                ci_significance,
-            )
-            ci_diff = np.concatenate(
-                (
-                    (self.__feature_summary["mean"] - ci_lo).values.reshape(1, -1),
-                    (ci_hi - self.__feature_summary["mean"]).values.reshape(1, -1),
+            # regression specific calculations
+            if self.target_type == "regression":
+                z_crit = scipy.stats.norm.ppf(1 - ci_significance / 2)
+                ci_diff = self.__feature_summary["std"] * z_crit
+                y_plot = self.__feature_summary["mean"]
+
+            # classification specific calculations
+            elif self.target_type == "classification":
+                ci_lo, ci_hi = proportion_confint(
+                    self.__feature_summary["mean"] * self.__feature_summary["count"],
+                    self.__feature_summary["count"],
+                    ci_significance,
                 )
-            )
+                ci_diff = 100 * np.concatenate(
+                    (
+                        (self.__feature_summary["mean"] - ci_lo).values.reshape(1, -1),
+                        (ci_hi - self.__feature_summary["mean"]).values.reshape(1, -1),
+                    )
+                )
+                y_plot = self.__feature_summary["mean"] * 100
+
+            # plot errorbars
             self.ax_target.errorbar(
                 self.__feature_summary.index,
-                self.__feature_summary["mean"] * 100,
-                yerr=ci_diff * 100,
+                y_plot,
+                yerr=ci_diff,
                 color=colour_target,
                 elinewidth=2,
                 capsize=3,
@@ -130,7 +158,7 @@ class SingleDistribution:
 
         # decorate x axis
         self.ax_feature.set_xlabel(self.feature.name)
-        if self.is_numeric and not self.is_bool:
+        if self.feature_is_numeric and not self.feature_is_bool:
             _, ax_max = self.ax_feature.get_xlim()
             if ax_max > 1000:
                 self.ax_feature.xaxis.set_major_formatter(
@@ -147,17 +175,13 @@ class SingleDistribution:
         if self.has_target:
             self.ax_target.set_ylabel(self.target.name, color=colour_target)
             self.ax_target.tick_params(axis="y", labelcolor=colour_target)
-            self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
+            if self.target_type == "classification":
+                self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
 
         # add title
-        if self.has_target:
-            self.ax_feature.set_title(
-                f"PPS = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
-            )
-        else:
-            self.ax_feature.set_title(
-                f"Inter-quartile skew = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
-            )
+        self.ax_feature.set_title(
+            f"{self.__score_type} = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
+        )
 
     def calculate_score(self):
         """Calculate the score for the feature based on its predictive power or skewness.
@@ -175,6 +199,7 @@ class SingleDistribution:
                 sample=None,
                 invalid_score=np.nan,
             )["ppscore"]
+            self.__score_type = "PPS"
 
         else:
             # calculate skew of median towards quartiles
@@ -182,6 +207,7 @@ class SingleDistribution:
             middle = (upper + lower) / 2
             range_ = abs(upper - lower)
             self.score = abs((median - middle)) / range_ / 2
+            self.__score_type = "Inter-quartile skew"
 
     def summarise_feature(self):
         """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
@@ -192,7 +218,7 @@ class SingleDistribution:
             self.__feature_summary = self.feature.to_frame()
 
         # bin target variable if there are too many distinct values
-        if self.feature.nunique() > self.binning_threshold and self.is_numeric:
+        if self.feature.nunique() > self.binning_threshold and self.feature_is_numeric:
             bin_boundaries = np.linspace(
                 self.feature.min(), self.feature.max(), self.binning_threshold + 1
             )
@@ -214,7 +240,7 @@ class SingleDistribution:
             )
 
         # convert index to string from boolean for printing purposes
-        if self.is_bool:
+        if self.feature_is_bool:
             self.__feature_summary.index = self.__feature_summary.index.map(
                 {True: "True", False: "False"}
             )
@@ -300,3 +326,13 @@ class SingleDistribution:
             return output
         else:
             raise TypeError(f"input is of {class_name} type which is not valid")
+
+    # classify type of data
+    @staticmethod
+    def __classify_type(input):
+        """A method to classify pandas series"""
+        # drop null values
+        no_null = input.dropna().convert_dtypes()
+        is_bool = pd.api.types.is_bool_dtype(no_null)
+        is_numeric = pd.api.types.is_numeric_dtype(no_null)
+        return is_bool, is_numeric, no_null.dtype
