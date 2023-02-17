@@ -317,6 +317,9 @@ class SingleDistribution:
         # convert array to series
         if isinstance(input, np.ndarray):
             output = np.squeeze(input)
+            ndim = output.ndim
+            if ndim > 1:
+                raise ValueError(f"Input has {ndim} dimensions but only 1 is allowed")
             output = pd.Series(output, name="unnamed")
         else:
             output = input
@@ -325,7 +328,7 @@ class SingleDistribution:
         if isinstance(output, pd.Series):
             return output
         else:
-            raise TypeError(f"input is of {class_name} type which is not valid")
+            raise TypeError(f"Input is of {class_name} type which is not valid")
 
     # classify type of data
     @staticmethod

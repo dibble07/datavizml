@@ -86,6 +86,11 @@ def test_single_with_interger_array_without_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
     x = np.array(list(range(16 - 1)) + [np.nan]) * 1000
+    x_fail = np.repeat(x.reshape(-1, 1), 3, axis=1)
+
+    # check inability to reset values
+    with pytest.raises(ValueError):
+        SingleDistribution(feature=x_fail, ax=ax)
 
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax)
