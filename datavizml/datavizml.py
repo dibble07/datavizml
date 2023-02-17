@@ -162,14 +162,9 @@ class SingleDistribution:
             self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
 
         # add title
-        if self.has_target:
-            self.ax_feature.set_title(
-                f"PPS = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
-            )
-        else:
-            self.ax_feature.set_title(
-                f"Inter-quartile skew = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
-            )
+        self.ax_feature.set_title(
+            f"{self.__score_type} = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
+        )
 
     def calculate_score(self):
         """Calculate the score for the feature based on its predictive power or skewness.
@@ -187,6 +182,7 @@ class SingleDistribution:
                 sample=None,
                 invalid_score=np.nan,
             )["ppscore"]
+            self.__score_type = "PPS"
 
         else:
             # calculate skew of median towards quartiles
@@ -194,6 +190,7 @@ class SingleDistribution:
             middle = (upper + lower) / 2
             range_ = abs(upper - lower)
             self.score = abs((median - middle)) / range_ / 2
+            self.__score_type = "Inter-quartile skew"
 
     def summarise_feature(self):
         """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
@@ -319,6 +316,6 @@ class SingleDistribution:
         """A method to classify pandas series"""
         # drop null values
         no_null = input.dropna().convert_dtypes()
-        is_bool = pd.api.types.feature_is_bool_dtype(no_null)
-        is_numeric = pd.api.types.feature_is_numeric_dtype(no_null)
+        is_bool = pd.api.types.is_bool_dtype(no_null)
+        is_numeric = pd.api.types.is_numeric_dtype(no_null)
         return is_bool, is_numeric
