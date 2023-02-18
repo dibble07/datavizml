@@ -15,6 +15,7 @@ Welcome to DataVizML's documentation!
    install
    datavizml
    demonstration
+   related_reading
 
 Indices and tables
 ==================
