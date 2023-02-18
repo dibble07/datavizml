@@ -17,3 +17,7 @@ pip install datavizml
 ## Documentation
 
 [Read the Docs](https://datavizml.readthedocs.io/en/latest/)
+
+## Related reading
+
+[Predictive Power Score (PPS)](https://github.com/8080labs/ppscore)
