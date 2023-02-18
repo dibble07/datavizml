@@ -1,10 +1,55 @@
 import matplotlib
 from matplotlib import ticker
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import ppscore as pps
 import scipy
 from statsmodels.stats.proportion import proportion_confint
+
+
+# convert to series
+def to_series(input):
+    """A method to convert inputs into a pandas series"""
+    # convert array to series
+    if isinstance(input, pd.Series):
+        return input
+    elif isinstance(input, np.ndarray):
+        output = np.squeeze(input)
+        ndim = output.ndim
+        if ndim > 1:
+            raise ValueError(f"Input has {ndim} dimensions but only 1 is allowed")
+        return pd.Series(output, name="unnamed")
+    else:
+        raise TypeError(
+            f"Input is of {input.__class__.__name__} type which is not valid"
+        )
+
+
+# convert to frame
+def to_frame(input):
+    """A method to convert inputs into a pandas dataframe"""
+    # convert array to frame
+    if isinstance(input, pd.DataFrame):
+        return input
+    elif isinstance(input, pd.Series):
+        return input.to_frame()
+    elif isinstance(input, np.ndarray):
+        return pd.Series(np.squeeze(input), name="unnamed")
+    else:
+        raise TypeError(
+            f"Input is of {input.__class__.__name__} type which is not valid"
+        )
+
+
+# classify type of data
+def classify_type(input):
+    """A method to classify pandas series"""
+    # drop null values
+    no_null = input.dropna().convert_dtypes()
+    is_bool = pd.api.types.is_bool_dtype(no_null)
+    is_numeric = pd.api.types.is_numeric_dtype(no_null)
+    return is_bool, is_numeric, no_null.dtype
 
 
 class SingleDistribution:
@@ -55,13 +100,13 @@ class SingleDistribution:
             self.feature_is_bool,
             self.feature_is_numeric,
             self.feature_dtype,
-        ) = self.__classify_type(self.feature)
+        ) = classify_type(self.feature)
         if self.has_target:
             (
                 self.target_is_bool,
                 self.target_is_numeric,
                 self.target_dtype,
-            ) = self.__classify_type(self.target)
+            ) = classify_type(self.target)
             if self.target_is_numeric and not self.target_is_bool:
                 self.target_type = "regression"
             else:
@@ -78,7 +123,7 @@ class SingleDistribution:
     def __str__(self):
         """Returns a string representation of the instance
 
-        :return: A string containing the feature name, target name, and score if available
+        :return: A string containing: feature name and data type; target name and data type; and relationship score if available
         :rtype: str
         """
 
@@ -309,7 +354,7 @@ class SingleDistribution:
 
         else:
             # convert to series and set
-            self.__feature = self.__to_series(feature)
+            self.__feature = to_series(feature)
 
     # target getter
     @property
@@ -326,7 +371,7 @@ class SingleDistribution:
 
         else:
             # convert to series and set
-            self.__target = self.__to_series(target)
+            self.__target = to_series(target)
 
     # score getter
     @property
@@ -355,36 +400,3 @@ class SingleDistribution:
     def missing_proportion(self):
         """The proportion of values that are missing"""
         return self.__missing_proportion
-
-    # convert to series
-    @staticmethod
-    def __to_series(input):
-        """A method to convert inputs into a pandas series"""
-        # extract original class name
-        class_name = input.__class__.__name__
-
-        # convert array to series
-        if isinstance(input, np.ndarray):
-            output = np.squeeze(input)
-            ndim = output.ndim
-            if ndim > 1:
-                raise ValueError(f"Input has {ndim} dimensions but only 1 is allowed")
-            output = pd.Series(output, name="unnamed")
-        else:
-            output = input
-
-        # only accept pandas series object
-        if isinstance(output, pd.Series):
-            return output
-        else:
-            raise TypeError(f"Input is of {class_name} type which is not valid")
-
-    # classify type of data
-    @staticmethod
-    def __classify_type(input):
-        """A method to classify pandas series"""
-        # drop null values
-        no_null = input.dropna().convert_dtypes()
-        is_bool = pd.api.types.is_bool_dtype(no_null)
-        is_numeric = pd.api.types.is_numeric_dtype(no_null)
-        return is_bool, is_numeric, no_null.dtype
