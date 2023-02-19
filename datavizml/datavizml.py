@@ -1,10 +1,55 @@
 import matplotlib
 from matplotlib import ticker
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import ppscore as pps
 import scipy
 from statsmodels.stats.proportion import proportion_confint
+
+
+# convert to series
+def to_series(input):
+    """A method to convert inputs into a pandas series"""
+    # convert array to series
+    if isinstance(input, pd.Series):
+        return input
+    elif isinstance(input, np.ndarray):
+        output = np.squeeze(input)
+        ndim = output.ndim
+        if ndim > 1:
+            raise ValueError(f"Input has {ndim} dimensions but only 1 is allowed")
+        return pd.Series(output, name="unnamed")
+    else:
+        raise TypeError(
+            f"Input is of {input.__class__.__name__} type which is not valid"
+        )
+
+
+# convert to frame
+def to_frame(input):
+    """A method to convert inputs into a pandas dataframe"""
+    # convert array to frame
+    if isinstance(input, pd.DataFrame):
+        return input
+    elif isinstance(input, pd.Series):
+        return input.to_frame()
+    elif isinstance(input, np.ndarray):
+        return pd.Series(np.squeeze(input), name="unnamed")
+    else:
+        raise TypeError(
+            f"Input is of {input.__class__.__name__} type which is not valid"
+        )
+
+
+# classify type of data
+def classify_type(input):
+    """A method to classify pandas series"""
+    # drop null values
+    no_null = input.dropna().convert_dtypes()
+    is_bool = pd.api.types.is_bool_dtype(no_null)
+    is_numeric = pd.api.types.is_numeric_dtype(no_null)
+    return is_bool, is_numeric, no_null.dtype
 
 
 class SingleDistribution:
@@ -55,13 +100,13 @@ class SingleDistribution:
             self.feature_is_bool,
             self.feature_is_numeric,
             self.feature_dtype,
-        ) = self.__classify_type(self.feature)
+        ) = classify_type(self.feature)
         if self.has_target:
             (
                 self.target_is_bool,
                 self.target_is_numeric,
                 self.target_dtype,
-            ) = self.__classify_type(self.target)
+            ) = classify_type(self.target)
             if self.target_is_numeric and not self.target_is_bool:
                 self.target_type = "regression"
             else:
@@ -78,7 +123,7 @@ class SingleDistribution:
     def __str__(self):
         """Returns a string representation of the instance
 
-        :return: A string containing the feature name, target name, and score if available
+        :return: A string containing: feature name and data type; target name and data type; and relationship score if available
         :rtype: str
         """
 
@@ -309,7 +354,7 @@ class SingleDistribution:
 
         else:
             # convert to series and set
-            self.__feature = self.__to_series(feature)
+            self.__feature = to_series(feature)
 
     # target getter
     @property
@@ -326,7 +371,7 @@ class SingleDistribution:
 
         else:
             # convert to series and set
-            self.__target = self.__to_series(target)
+            self.__target = to_series(target)
 
     # score getter
     @property
@@ -356,35 +401,158 @@ class SingleDistribution:
         """The proportion of values that are missing"""
         return self.__missing_proportion
 
-    # convert to series
-    @staticmethod
-    def __to_series(input):
-        """A method to convert inputs into a pandas series"""
-        # extract original class name
-        class_name = input.__class__.__name__
 
-        # convert array to series
-        if isinstance(input, np.ndarray):
-            output = np.squeeze(input)
-            ndim = output.ndim
-            if ndim > 1:
-                raise ValueError(f"Input has {ndim} dimensions but only 1 is allowed")
-            output = pd.Series(output, name="unnamed")
+class ExploratoryDataAnalysis:
+    """A graphical summary of all given features and their relationship to a target
+
+    :param data: Features to be analysed
+    :type data: pandas Series
+    :param target: Target to be predicted
+    :type target: pandas Series, optional
+    :param ncols: Number of columns to use in figure
+    :type ncols: float, optional
+    """
+
+    FIGURE_WIDTH = 18  # width of figure
+    AXES_HEIGHT = 3  # height of each axis
+
+    def __init__(
+        self, data, target, ncols, figure_width=FIGURE_WIDTH, axes_height=AXES_HEIGHT
+    ):
+        """Constructor method"""
+        # input variables
+        self.data = data
+        self.has_target = target is not False
+        if self.has_target:
+            self.target = target
+        self.__ncols = ncols
+        self.__figure_width = figure_width
+        self.__axes_height = axes_height
+
+        # calculate general use variables
+        self.__nrows = -(-(self.data.shape[1]) // self.__ncols)
+
+        # classify inputs
+        self.data_dtypes = set([classify_type(x)[2] for _, x in self.data.items()])
+        if self.has_target:
+            _, _, self.target_dtype = classify_type(self.target)
+
+        # check input
+        if self.has_target:
+            if self.data.shape[0] != self.target.shape[0]:
+                raise ValueError(
+                    f"Dimension mismatch, features have {self.feature.shape[0]} elements but the target has {self.target.shape[0]}"
+                )
+
+        # initialise figure and axes
+        self.init_figure()
+
+        # initialise figure and axes
+        self.init_single_distributions()
+
+    def __str__(self):
+        """Returns a string representation of the instance
+
+        :return: A string containing: feature name and data type; target name and data type; and relationship score if available
+        :rtype: str
+        """
+
+        # conditional strings
+        feature_vals = (
+            ", ".join(self.data.columns),
+            ", ".join([str(x) for x in self.data_dtypes]),
+        )
+        target_val = (
+            f"{self.target.name} ({self.target_dtype})"
+            if self.has_target
+            else "no target provided"
+        )
+
+        # attribute related strings
+        feature_str = f"features: {feature_vals[0]} ({feature_vals[1]})"
+        target_str = f"target: {target_val}"
+
+        return "\n".join([feature_str, target_str])
+
+    def __getitem__(self, ind):
+        """Get the distribution plot at the given index
+
+        :param ind: The index of the distribution plot to retrieve
+        :type ind: int
+
+        :return: The SingleDistribution object at the given index, or None if the index is out of range
+        :rtype: SingleDistribution or None
+        """
+        return self.single_distributions[ind]
+
+    def __call__(self):
+        """Generates and decorates the plots for each feature
+
+        :return: A figure with the plots for each feature
+        :rtype: matplotlib.figure.Figure
+        """
+        # call the plot for each object
+        for plot in self:
+            plot()
+
+        return self.fig
+
+    # initialise figure
+    def init_figure(self):
+        """Initialise a figure with the required size and axes for the exploratory data analysis"""
+        # create figure of required size with the required axes
+        figsize = (
+            self.__figure_width,
+            self.__axes_height * self.__nrows,
+        )
+        fig, ax = plt.subplots(
+            nrows=self.__nrows, ncols=self.__ncols, squeeze=False, figsize=figsize
+        )
+
+        # assign to object
+        self.fig = fig
+        self.ax = ax
+
+    # initialise distribution plot
+    def init_single_distributions(self):
+        """Initialise a single distribution object for each feature"""
+        # initialise all single distribution objects
+        self.single_distributions = []
+        for (name, feature), ax in zip(self.data.items(), self.ax.flatten()):
+            self.single_distributions.append(
+                SingleDistribution(feature=feature, target=self.target, ax=ax)
+            )
+
+    # data getter
+    @property
+    def data(self):
+        """The feature data"""
+        return self.__data
+
+    # data setter
+    @data.setter
+    def data(self, data):
+        if hasattr(self, "data"):
+            # do not allow changing of data
+            raise AttributeError("This attribute has already been set")
+
         else:
-            output = input
+            # convert to series and set
+            self.__data = to_frame(data)
 
-        # only accept pandas series object
-        if isinstance(output, pd.Series):
-            return output
+    # target getter
+    @property
+    def target(self):
+        """The target data"""
+        return self.__target
+
+    # target setter
+    @target.setter
+    def target(self, target):
+        if hasattr(self, "target") or not self.has_target:
+            # do not allow changing of data
+            raise AttributeError("This attribute has already been set")
+
         else:
-            raise TypeError(f"Input is of {class_name} type which is not valid")
-
-    # classify type of data
-    @staticmethod
-    def __classify_type(input):
-        """A method to classify pandas series"""
-        # drop null values
-        no_null = input.dropna().convert_dtypes()
-        is_bool = pd.api.types.is_bool_dtype(no_null)
-        is_numeric = pd.api.types.is_numeric_dtype(no_null)
-        return is_bool, is_numeric, no_null.dtype
+            # convert to series and set
+            self.__target = to_series(target)

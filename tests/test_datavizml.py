@@ -1,4 +1,4 @@
-from datavizml.datavizml import SingleDistribution
+from datavizml.datavizml import SingleDistribution, ExploratoryDataAnalysis
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -236,3 +236,63 @@ def test_single_with_float_pandas_with_float_target(capsys):
 
     # check score
     assert sd.score == 1.0
+
+
+def test_multi_with_float_series_with_float_target(capsys):
+    # initialise inputs
+    _, ax = plt.subplots()
+    x = pd.Series(
+        [(x - 10) / 2 for x in range(20)] * 10 + [np.nan],
+        name="feature_test",
+    )
+    y = x * x
+    y.name = "target_test"
+
+    # initialise object
+    eda = ExploratoryDataAnalysis(data=x, target=y, ncols=1)
+
+    # check printing
+    print(eda, end="")
+    captured = capsys.readouterr()
+    expected = "features: feature_test (Float64)\ntarget: target_test (Float64)"
+    assert expected == captured.out
+
+
+def test_multi_with_float_string_dataframe_with_string_target(capsys):
+    # initialise inputs
+    x = pd.DataFrame(
+        {
+            "feature_float": [i / 10 for i in range(10)],
+            "feature_string": [str(i) for i in range(10)],
+        }
+    )
+    y = pd.Series([str(i) for i in range(10)], name="target_test")
+
+    # initialise object
+    eda = ExploratoryDataAnalysis(data=x, target=y, ncols=2)
+
+    # check printing
+    print(eda, end="")
+    captured = capsys.readouterr()
+    expected = "features: feature_float, feature_string (string, Float64)\ntarget: target_test (string)"
+    assert expected == captured.out
+
+
+def test_multi_with_int_category_dataframe_with_float_target(capsys):
+    # initialise inputs
+    x = pd.DataFrame(
+        {
+            "feature_int": [i for i in range(10)],
+            "feature_category": [str(i) for i in range(10)],
+        }
+    ).astype({"feature_category": "category"})
+    y = pd.Series([i / 10 for i in range(10)], name="target_test")
+
+    # initialise object
+    eda = ExploratoryDataAnalysis(data=x, target=y, ncols=2)
+
+    # check printing
+    print(eda, end="")
+    captured = capsys.readouterr()
+    expected = "features: feature_int, feature_category (Int64, category)\ntarget: target_test (Float64)"
+    assert expected == captured.out
