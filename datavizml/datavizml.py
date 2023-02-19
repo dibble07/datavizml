@@ -432,11 +432,10 @@ class ExploratoryDataAnalysis:
         # calculate general use variables
         self.__nrows = -(-(self.data.shape[1]) // self.__ncols)
 
-        # initialise figure and axes
-        self.init_figure()
-
-        # initialise figure and axes
-        self.init_single_distributions()
+        # classify inputs
+        self.data_dtypes = set([classify_type(x)[2] for _, x in self.data.items()])
+        if self.has_target:
+            _, _, self.target_dtype = classify_type(self.target)
 
         # check input
         if self.has_target:
@@ -444,6 +443,12 @@ class ExploratoryDataAnalysis:
                 raise ValueError(
                     f"Dimension mismatch, features have {self.feature.shape[0]} elements but the target has {self.target.shape[0]}"
                 )
+
+        # initialise figure and axes
+        self.init_figure()
+
+        # initialise figure and axes
+        self.init_single_distributions()
 
     def __str__(self):
         """Returns a string representation of the instance
@@ -453,6 +458,10 @@ class ExploratoryDataAnalysis:
         """
 
         # conditional strings
+        feature_vals = (
+            ", ".join(self.data.columns),
+            ", ".join([str(x) for x in self.data_dtypes]),
+        )
         target_val = (
             f"{self.target.name} ({self.target_dtype})"
             if self.has_target
@@ -460,10 +469,10 @@ class ExploratoryDataAnalysis:
         )
 
         # attribute related strings
-        feature_str = f"feature: {self.feature.name} ({self.feature_dtypes.unique()})"
+        feature_str = f"features: {feature_vals[0]} ({feature_vals[1]})"
         target_str = f"target: {target_val}"
 
-        return ", ".join([feature_str, target_str])
+        return "\n".join([feature_str, target_str])
 
     def __getitem__(self, ind):
         """Get the distribution plot at the given index
@@ -496,7 +505,9 @@ class ExploratoryDataAnalysis:
             self.__figure_width,
             self.__axes_height * self.__nrows,
         )
-        fig, ax = plt.subplots(ncols=self.__ncols, nrows=self.__nrows, figsize=figsize)
+        fig, ax = plt.subplots(
+            nrows=self.__nrows, ncols=self.__ncols, squeeze=False, figsize=figsize
+        )
 
         # assign to object
         self.fig = fig
@@ -507,9 +518,9 @@ class ExploratoryDataAnalysis:
         """Initialise a single distribution object for each feature"""
         # initialise all single distribution objects
         self.single_distributions = []
-        for col, ax in zip(self.data.columns, self.ax.flatten()):
+        for (name, feature), ax in zip(self.data.items(), self.ax.flatten()):
             self.single_distributions.append(
-                SingleDistribution(feature=self.data[col], target=self.target, ax=ax)
+                SingleDistribution(feature=feature, target=self.target, ax=ax)
             )
 
     # data getter
