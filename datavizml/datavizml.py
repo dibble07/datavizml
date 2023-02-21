@@ -283,12 +283,18 @@ class SingleDistribution:
             self.__score_type = "PPS"
 
         else:
-            # calculate skew of median towards quartiles
-            lower, median, upper = np.quantile(self.feature.dropna(), [0.25, 0.5, 0.75])
-            middle = (upper + lower) / 2
-            range_ = abs(upper - lower)
-            self.score = abs((median - middle)) / range_ / 2
-            self.__score_type = "Inter-quartile skew"
+            if self.feature_is_numeric:
+                # calculate skew of median towards quartiles
+                lower, median, upper = np.quantile(
+                    self.feature.dropna(), [0.25, 0.5, 0.75]
+                )
+                middle = (upper + lower) / 2
+                range_ = abs(upper - lower)
+                self.score = abs((median - middle)) / range_ / 2
+                self.__score_type = "Inter-quartile skew"
+            else:
+                self.score = self.feature.nunique() / self.feature.count()
+                self.__score_type = "Cardinality ratio"
 
     def summarise_feature(self):
         """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
