@@ -251,6 +251,9 @@ def test_multi_with_float_series_with_float_target(capsys):
     # initialise object
     eda = ExploratoryDataAnalysis(data=x, target=y, ncols=1)
 
+    # run object
+    eda()
+
     # check printing
     print(eda, end="")
     captured = capsys.readouterr()
@@ -271,6 +274,9 @@ def test_multi_with_float_string_dataframe_with_string_target(capsys):
     # initialise object
     eda = ExploratoryDataAnalysis(data=x, target=y, ncols=2)
 
+    # run object
+    eda()
+
     # check printing
     print(eda, end="")
     captured = capsys.readouterr()
@@ -289,6 +295,9 @@ def test_multi_with_int_category_dataframe_without_target(capsys):
 
     # initialise object
     eda = ExploratoryDataAnalysis(data=x, ncols=2)
+
+    # run object
+    eda()
 
     # check printing
     print(eda, end="")
