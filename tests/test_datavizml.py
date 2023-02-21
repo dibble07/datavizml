@@ -278,7 +278,7 @@ def test_multi_with_float_string_dataframe_with_string_target(capsys):
     assert expected == captured.out
 
 
-def test_multi_with_int_category_dataframe_with_float_target(capsys):
+def test_multi_with_int_category_dataframe_without_target(capsys):
     # initialise inputs
     x = pd.DataFrame(
         {
@@ -286,13 +286,12 @@ def test_multi_with_int_category_dataframe_with_float_target(capsys):
             "feature_category": [str(i) for i in range(10)],
         }
     ).astype({"feature_category": "category"})
-    y = pd.Series([i / 10 for i in range(10)], name="target_test")
 
     # initialise object
-    eda = ExploratoryDataAnalysis(data=x, target=y, ncols=2)
+    eda = ExploratoryDataAnalysis(data=x, ncols=2)
 
     # check printing
     print(eda, end="")
     captured = capsys.readouterr()
-    expected = "features: feature_int, feature_category (Int64, category)\ntarget: target_test (Float64)"
+    expected = "features: feature_int, feature_category (Int64, category)\ntarget: no target provided"
     assert expected == captured.out
