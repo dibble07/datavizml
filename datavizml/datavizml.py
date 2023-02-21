@@ -195,9 +195,7 @@ class SingleDistribution:
                 ).items():
                     mean = values / self.__feature_summary["count"]
                     ci_lo, ci_hi = proportion_confint(
-                        values,
-                        self.__feature_summary["count"],
-                        ci_significance,
+                        values, self.__feature_summary["count"], ci_significance
                     )
                     ci_diff_all[class_name] = 100 * np.concatenate(
                         (
@@ -417,7 +415,12 @@ class ExploratoryDataAnalysis:
     AXES_HEIGHT = 3  # height of each axis
 
     def __init__(
-        self, data, target, ncols, figure_width=FIGURE_WIDTH, axes_height=AXES_HEIGHT
+        self,
+        data,
+        ncols,
+        target=False,
+        figure_width=FIGURE_WIDTH,
+        axes_height=AXES_HEIGHT,
     ):
         """Constructor method"""
         # input variables
@@ -501,10 +504,7 @@ class ExploratoryDataAnalysis:
     def init_figure(self):
         """Initialise a figure with the required size and axes for the exploratory data analysis"""
         # create figure of required size with the required axes
-        figsize = (
-            self.__figure_width,
-            self.__axes_height * self.__nrows,
-        )
+        figsize = (self.__figure_width, self.__axes_height * self.__nrows)
         fig, ax = plt.subplots(
             nrows=self.__nrows, ncols=self.__ncols, squeeze=False, figsize=figsize
         )
@@ -520,7 +520,11 @@ class ExploratoryDataAnalysis:
         self.single_distributions = []
         for (name, feature), ax in zip(self.data.items(), self.ax.flatten()):
             self.single_distributions.append(
-                SingleDistribution(feature=feature, target=self.target, ax=ax)
+                SingleDistribution(
+                    feature=feature,
+                    target=self.target if self.has_target else False,
+                    ax=ax,
+                )
             )
 
     # data getter
