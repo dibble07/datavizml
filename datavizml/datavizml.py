@@ -283,7 +283,7 @@ class SingleDistribution:
             self.__score_type = "PPS"
 
         else:
-            if self.feature_is_numeric:
+            if self.feature_is_numeric and not self.feature_is_bool:
                 # calculate skew of median towards quartiles
                 lower, median, upper = np.quantile(
                     self.feature.dropna(), [0.25, 0.5, 0.75]
@@ -469,7 +469,7 @@ class ExploratoryDataAnalysis:
         # conditional strings
         feature_vals = (
             ", ".join(self.data.columns),
-            ", ".join([str(x) for x in self.data_dtypes]),
+            ", ".join(sorted([str(x) for x in self.data_dtypes])),
         )
         target_val = (
             f"{self.target.name} ({self.target_dtype})"

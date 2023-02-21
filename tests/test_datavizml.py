@@ -280,7 +280,7 @@ def test_multi_with_float_string_dataframe_with_string_target(capsys):
     # check printing
     print(eda, end="")
     captured = capsys.readouterr()
-    expected = "features: feature_float, feature_string (string, Float64)\ntarget: target_test (string)"
+    expected = "features: feature_float, feature_string (Float64, string)\ntarget: target_test (string)"
     assert expected == captured.out
 
 
@@ -289,6 +289,7 @@ def test_multi_with_int_category_dataframe_without_target(capsys):
     x = pd.DataFrame(
         {
             "feature_int": [i for i in range(10)],
+            "feature_bool": [i % 2 == 0 for i in range(10)],
             "feature_category": [str(i) for i in range(10)],
         }
     ).astype({"feature_category": "category"})
@@ -302,5 +303,5 @@ def test_multi_with_int_category_dataframe_without_target(capsys):
     # check printing
     print(eda, end="")
     captured = capsys.readouterr()
-    expected = "features: feature_int, feature_category (Int64, category)\ntarget: no target provided"
+    expected = "features: feature_int, feature_bool, feature_category (Int64, boolean, category)\ntarget: no target provided"
     assert expected == captured.out
