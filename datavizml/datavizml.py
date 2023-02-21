@@ -520,7 +520,11 @@ class ExploratoryDataAnalysis:
         self.single_distributions = []
         for (name, feature), ax in zip(self.data.items(), self.ax.flatten()):
             self.single_distributions.append(
-                SingleDistribution(feature=feature, target=self.target, ax=ax)
+                SingleDistribution(
+                    feature=feature,
+                    target=self.target if self.has_target else False,
+                    ax=ax,
+                )
             )
 
     # data getter
