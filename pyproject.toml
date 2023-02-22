@@ -1,10 +1,9 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools-scm[toml]"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "datavizml"
-version = "1.1.4"
 authors = [
   { name="Dr Robert Dibble", email="robertdibble@live.co.uk" },
 ]
@@ -15,8 +14,20 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 ]
+dependencies = [
+    "matplotlib<=3.6.0",
+    "numpy",
+    "pandas",
+    "ppscore",
+    "scikit-learn",
+    "scipy",
+    "statsmodels",
+]
+dynamic = ["version"]
 
 [project.urls]
 "Homepage" = "https://github.com/dibble07/datavizml"
 "Bug Tracker" = "https://github.com/dibble07/datavizml/issues"
 "Changelog" = "https://github.com/dibble07/datavizml/releases"
+
+[tool.setuptools_scm]
