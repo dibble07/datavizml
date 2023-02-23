@@ -343,3 +343,17 @@ def test_multi_with_int_category_dataframe_without_target(capsys):
     captured = capsys.readouterr()
     expected = "features: feature_int, feature_bool, feature_category (Int64, boolean, category)\ntarget: no target provided"
     assert expected == captured.out
+
+
+def test_multi_with_list(capsys):
+    # initialise inputs
+    x_list = [[1, 2], [1, 2]]
+    y_list = [0, 1]
+    x_array = np.array([[1, 2], [1, 2]])
+    y_array = np.array([0, 1])
+
+    # check inability to initiate with lists
+    with pytest.raises(TypeError):
+        ExploratoryDataAnalysis(data=x_list, ncols=2, target=y_array)
+    with pytest.raises(TypeError):
+        ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_list)
