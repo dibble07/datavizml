@@ -50,16 +50,9 @@ def test_single_prescribed_score():
 
 
 @pytest.mark.parametrize(
-    "fun, dtype_feature",
-    [
-        (int, "Int64"),
-        (float, "Float64"),
-        (str, "string"),
-        ("category", "category"),
-        (bool, "boolean"),
-    ],
+    "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
 )
-def test_single_with_series_with_boolean_target(capsys, fun, dtype_feature):
+def test_single_with_series_with_boolean_target(capsys, dtype_feature):
     # initialise raw values
     x_raw = ([i for i in range(5)] + [np.nan]) * 4
     y = [True, True, True, False, False, False] * 4
