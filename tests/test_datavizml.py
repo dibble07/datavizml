@@ -68,19 +68,19 @@ def test_single_with_series_with_boolean_target(capsys, type_feature, dtype_feat
         elif dtype_feature in ["string", "category"]:
             x = [str(i) if not np.isnan(i) else i for i in x_raw]
         elif dtype_feature == "boolean":
-            x = [i > 2.5 if not np.isnan(i) else i for i in x_raw]
+            if type_feature == "array":
+                x = [i < 2.5 for i in x_raw]
+            else:
+                x = [i < 2.5 if not np.isnan(i) else i for i in x_raw]
         else:
             x = x_raw
 
         # convert values to inputs
         if type_feature == "array":
-            # can't create numpy array of booleans with nans
-            if dtype_feature == "boolean":
-                x = [bool(i) for i in x]
-            x_name = "unnamed_feature"
-            x_final = np.array(x)
-            y_name = "unnamed_target"
-            y_final = np.array(y)
+            x_name = f"unnamed_feature_{type_feature}_{dtype_feature}"
+            x_final = (np.array(x), x_name)
+            y_name = f"unnamed_target_{type_feature}_{dtype_feature}"
+            y_final = (np.array(y), y_name)
         elif type_feature == "series":
             x_name = "feature_test"
             x_final = pd.Series(x, name=x_name)
@@ -109,6 +109,8 @@ def test_single_with_series_with_boolean_target(capsys, type_feature, dtype_feat
         assert sd.missing_proportion == expected_missing_proportion
 
         # check inability to reset values
+        with pytest.raises(AttributeError):
+            sd.target = x
         with pytest.raises(AttributeError):
             sd.target = y
 
