@@ -35,7 +35,7 @@ def to_frame(input):
     elif isinstance(input, pd.Series):
         return input.to_frame()
     elif isinstance(input, np.ndarray):
-        return pd.Series(np.squeeze(input), name="unnamed")
+        return pd.DataFrame(np.squeeze(input))
     else:
         raise TypeError(
             f"Input is of {input.__class__.__name__} type which is not valid"
@@ -72,15 +72,15 @@ class SingleDistribution:
     COLOUR_FEATURE_DEFAULT = "grey"  # colour used for feature
     COLOURMAP_TARGET_DEFAULT = "tab10"  # colour map used for target
 
-    def __init__(self, feature, ax, target=False, score=False, binning_threshold=False):
+    def __init__(self, feature, ax, target=None, score=None, binning_threshold=None):
         """Constructor method"""
         # input variables
         self.ax_feature = ax
         self.feature = feature
-        self.has_target = target is not False
+        self.has_target = target is not None
         if self.has_target:
             self.target = target
-        if score is not False:
+        if score is not None:
             self.score = score
         self.binning_threshold = (
             binning_threshold
@@ -129,11 +129,11 @@ class SingleDistribution:
 
         # conditional strings
         target_val = (
-            f"{self.target.name} ({self.target_dtype} - {self.target_type.replace('_',' ').title()})"
+            f"{self.target.name} ({self.target_dtype} - {self.target_type})"
             if self.has_target
             else "no target provided"
         )
-        score_val = self.score if hasattr(self, "score") else "not calculated"
+        score_val = f"{self.score:0.3f}" if hasattr(self, "score") else "not calculated"
 
         # attribute related strings
         feature_str = f"feature: {self.feature.name} ({self.feature_dtype})"
@@ -268,7 +268,8 @@ class SingleDistribution:
         """Calculate the score for the feature based on its predictive power or skewness.
 
         If a target has been specified for the feature, the score is calculated based on the predictive power score
-        (PPS). Otherwise, the score is calculated based on the skewness of the median towards quartiles.
+        (PPS). Otherwise, the score is calculated based on the skewness of the median towards quartiles (for
+        numerical features) or the categorical skew (for categorical features).
         """
 
         if self.has_target:
@@ -293,8 +294,8 @@ class SingleDistribution:
                 self.score = abs((median - middle)) / range_ / 2
                 self.__score_type = "Inter-quartile skew"
             else:
-                self.score = self.feature.nunique() / self.feature.count()
-                self.__score_type = "Cardinality ratio"
+                self.score = self.feature.value_counts(normalize=True).max()
+                self.__score_type = "Categorical skew"
 
     def summarise_feature(self):
         """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
@@ -436,14 +437,14 @@ class ExploratoryDataAnalysis:
         self,
         data,
         ncols,
-        target=False,
+        target=None,
         figure_width=FIGURE_WIDTH,
         axes_height=AXES_HEIGHT,
     ):
         """Constructor method"""
         # input variables
         self.data = data
-        self.has_target = target is not False
+        self.has_target = target is not None
         if self.has_target:
             self.target = target
         self.__ncols = ncols
@@ -462,7 +463,7 @@ class ExploratoryDataAnalysis:
         if self.has_target:
             if self.data.shape[0] != self.target.shape[0]:
                 raise ValueError(
-                    f"Dimension mismatch, features have {self.feature.shape[0]} elements but the target has {self.target.shape[0]}"
+                    f"Dimension mismatch, features have {self.data.shape[0]} elements but the target has {self.target.shape[0]}"
                 )
 
         # initialise figure and axes
@@ -536,11 +537,11 @@ class ExploratoryDataAnalysis:
         """Initialise a single distribution object for each feature"""
         # initialise all single distribution objects
         self.single_distributions = []
-        for (name, feature), ax in zip(self.data.items(), self.ax.flatten()):
+        for (_, feature), ax in zip(self.data.items(), self.ax.flatten()):
             self.single_distributions.append(
                 SingleDistribution(
                     feature=feature,
-                    target=self.target if self.has_target else False,
+                    target=self.target if self.has_target else None,
                     ax=ax,
                 )
             )
