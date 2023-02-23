@@ -49,58 +49,80 @@ def test_single_prescribed_score():
     assert sd.score == 0.1
 
 
+@pytest.mark.parametrize("type_feature", ["array", "series"])  # "list",
 @pytest.mark.parametrize(
     "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
 )
-def test_single_with_series_with_boolean_target(capsys, dtype_feature):
-    # initialise raw values
-    x_raw = ([i for i in range(5)] + [np.nan]) * 4
-    y = [True, True, True, False, False, False] * 4
+def test_single_with_series_with_boolean_target(capsys, type_feature, dtype_feature):
+    # check config is testable
+    config_testable = not (type_feature == "array" and dtype_feature == "category")
 
-    # process raw values based on type
-    if dtype_feature == "Float64":
-        x = [i + 0.01 if not np.isnan(i) else i for i in x_raw]
-    elif dtype_feature in ["string", "category"]:
-        x = [str(i) if not np.isnan(i) else i for i in x_raw]
-    elif dtype_feature == "boolean":
-        x = [i > 2.5 if not np.isnan(i) else i for i in x_raw]
-    else:
-        x = x_raw
+    if config_testable:
+        # initialise raw values
+        x_raw = ([i for i in range(5)] + [np.nan]) * 4
+        y = [True, True, True, False, False, False] * 4
 
-    # convert values to inputs
-    x_series = pd.Series(x, name="feature_test")
-    if dtype_feature == "category":
-        x_series = x_series.astype("category")
-    y_series = pd.Series(y, name="target_test")
+        # process raw values based on type
+        if dtype_feature == "Float64":
+            x = [i + 0.01 if not np.isnan(i) else i for i in x_raw]
+        elif dtype_feature in ["string", "category"]:
+            x = [str(i) if not np.isnan(i) else i for i in x_raw]
+        elif dtype_feature == "boolean":
+            x = [i > 2.5 if not np.isnan(i) else i for i in x_raw]
+        else:
+            x = x_raw
 
-    # initialise object
-    _, ax = plt.subplots()
-    sd = SingleDistribution(feature=x_series, ax=ax, target=y_series)
+        # convert values to inputs
+        if type_feature == "array":
+            # can't create numpy array of booleans with nans
+            if dtype_feature == "boolean":
+                x = [bool(i) for i in x]
+            x_name = "unnamed_feature"
+            x_final = np.array(x)
+            y_name = "unnamed_target"
+            y_final = np.array(y)
+        elif type_feature == "series":
+            x_name = "feature_test"
+            x_final = pd.Series(x, name=x_name)
+            y_name = "target_test"
+            y_final = pd.Series(y, name=y_name)
 
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = f"feature: feature_test ({dtype_feature}), target: target_test (boolean - Classification), score: not calculated"
-    assert expected == captured.out
+        # pandas specific dtype conversion
+        if dtype_feature == "category":
+            x_final = x_final.astype("category")
 
-    # check missing proportion value
-    assert sd.missing_proportion == 1 / 6
+        # initialise object
+        _, ax = plt.subplots()
+        sd = SingleDistribution(feature=x_final, ax=ax, target=y_final)
 
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        sd.target = y
+        # check printing
+        print(sd, end="")
+        captured = capsys.readouterr()
+        expected = f"feature: {x_name} ({dtype_feature}), target: {y_name} (boolean - Classification), score: not calculated"
+        assert expected == captured.out
 
-    # call object
-    sd()
+        # check missing proportion value
+        if type_feature == "array" and dtype_feature in ["boolean", "string"]:
+            expected_missing_proportion = 0
+        else:
+            expected_missing_proportion = 1 / 6
+        assert sd.missing_proportion == expected_missing_proportion
 
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = f"feature: feature_test ({dtype_feature}), target: target_test (boolean - Classification), score: 1.0"
-    assert expected == captured.out
+        # check inability to reset values
+        with pytest.raises(AttributeError):
+            sd.target = y
 
-    # check score
-    assert sd.score == 1.0
+        # call object
+        sd()
+
+        # check printing
+        print(sd, end="")
+        captured = capsys.readouterr()
+        expected = f"feature: {x_name} ({dtype_feature}), target: {y_name} (boolean - Classification), score: 1.0"
+        assert expected == captured.out
+
+        # check score
+        assert sd.score == 1.0
 
 
 def test_single_with_boolean_pandas_with_string_target(capsys):
