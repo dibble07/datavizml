@@ -181,9 +181,7 @@ def test_single_with_interger_array_without_target(capsys):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = (
-        "feature: unnamed (Int64), target: no target provided, score: not calculated"
-    )
+    expected = "feature: unnamed_feature (Int64), target: no target provided, score: not calculated"
     assert expected == captured.out
 
     # check missing proportion value
@@ -199,7 +197,9 @@ def test_single_with_interger_array_without_target(capsys):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = "feature: unnamed (Int64), target: no target provided, score: 0.0"
+    expected = (
+        "feature: unnamed_feature (Int64), target: no target provided, score: 0.0"
+    )
     assert expected == captured.out
 
     # check score
