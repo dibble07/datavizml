@@ -49,25 +49,45 @@ def test_single_prescribed_score():
     assert sd.score == 0.1
 
 
-@pytest.mark.parametrize("dtype,factor", [("Int64", 0), ("Float64", 0.1)])
-def test_single_with_series_with_boolean_target(capsys, dtype, factor):
-    # initialise inputs
-    x_raw = ([i + factor for i in range(5)] + [np.nan]) * 4
-    y_raw = [True, True, False, True, False, False] * 4
-    x = pd.Series(
-        x_raw,
-        name="feature_test",
-    ).astype(dtype)
-    y = pd.Series(y_raw, name="target_test")
+@pytest.mark.parametrize(
+    "fun, dtype_feature",
+    [
+        (int, "Int64"),
+        (float, "Float64"),
+        (str, "string"),
+        ("category", "category"),
+        (bool, "boolean"),
+    ],
+)
+def test_single_with_series_with_boolean_target(capsys, fun, dtype_feature):
+    # initialise raw values
+    x_raw = ([i for i in range(5)] + [np.nan]) * 4
+    y = [True, True, True, False, False, False] * 4
+
+    # process raw values based on type
+    if dtype_feature == "Float64":
+        x = [i + 0.01 if not np.isnan(i) else i for i in x_raw]
+    elif dtype_feature in ["string", "category"]:
+        x = [str(i) if not np.isnan(i) else i for i in x_raw]
+    elif dtype_feature == "boolean":
+        x = [i > 2.5 if not np.isnan(i) else i for i in x_raw]
+    else:
+        x = x_raw
+
+    # convert values to inputs
+    x_series = pd.Series(x, name="feature_test")
+    if dtype_feature == "category":
+        x_series = x_series.astype("category")
+    y_series = pd.Series(y, name="target_test")
 
     # initialise object
     _, ax = plt.subplots()
-    sd = SingleDistribution(feature=x, ax=ax, target=y)
+    sd = SingleDistribution(feature=x_series, ax=ax, target=y_series)
 
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = f"feature: feature_test ({dtype}), target: target_test (boolean - Classification), score: not calculated"
+    expected = f"feature: feature_test ({dtype_feature}), target: target_test (boolean - Classification), score: not calculated"
     assert expected == captured.out
 
     # check missing proportion value
@@ -83,45 +103,7 @@ def test_single_with_series_with_boolean_target(capsys, dtype, factor):
     # check printing
     print(sd, end="")
     captured = capsys.readouterr()
-    expected = f"feature: feature_test ({dtype}), target: target_test (boolean - Classification), score: 1.0"
-    assert expected == captured.out
-
-    # check score
-    assert sd.score == 1.0
-
-
-def test_single_with_boolean_pandas_with_boolean_target(capsys):
-    # initialise inputs
-    _, ax = plt.subplots()
-    x = pd.Series(
-        [False, False, True, np.nan] * 4,
-        name="feature_test",
-    )
-    y = pd.Series([True, True, False, False] * 4, name="target_test")
-
-    # initialise object
-    sd = SingleDistribution(feature=x, ax=ax, target=y)
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: feature_test (boolean), target: target_test (boolean - Classification), score: not calculated"
-    assert expected == captured.out
-
-    # check missing proportion value
-    assert sd.missing_proportion == 0.25
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        sd.target = y
-
-    # call object
-    sd()
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: feature_test (boolean), target: target_test (boolean - Classification), score: 1.0"
+    expected = f"feature: feature_test ({dtype_feature}), target: target_test (boolean - Classification), score: 1.0"
     assert expected == captured.out
 
     # check score
