@@ -35,7 +35,7 @@ def to_frame(input):
     elif isinstance(input, pd.Series):
         return input.to_frame()
     elif isinstance(input, np.ndarray):
-        return pd.DataFrame(np.squeeze(input), name="unnamed")
+        return pd.DataFrame(np.squeeze(input))
     else:
         raise TypeError(
             f"Input is of {input.__class__.__name__} type which is not valid"
@@ -462,7 +462,7 @@ class ExploratoryDataAnalysis:
         if self.has_target:
             if self.data.shape[0] != self.target.shape[0]:
                 raise ValueError(
-                    f"Dimension mismatch, features have {self.feature.shape[0]} elements but the target has {self.target.shape[0]}"
+                    f"Dimension mismatch, features have {self.data.shape[0]} elements but the target has {self.target.shape[0]}"
                 )
 
         # initialise figure and axes

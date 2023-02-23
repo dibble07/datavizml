@@ -12,6 +12,7 @@ def test_single_with_list():
     y_list = [0, 1]
     x_array = np.array([1, 2])
     y_array = np.array([0, 1])
+    x_array_long = np.array([1, 2, 3])
     y_array_long = np.array([0, 1, 2])
 
     # check inability to initiate with lists
@@ -23,6 +24,8 @@ def test_single_with_list():
     # check inability to initiate with unevenly sized inputs
     with pytest.raises(ValueError):
         SingleDistribution(feature=x_array, ax=ax, target=y_array_long)
+    with pytest.raises(ValueError):
+        SingleDistribution(feature=x_array_long, ax=ax, target=y_array)
 
 
 def test_single_prescribed_score():
@@ -309,13 +312,19 @@ def test_multi_with_float_string_dataframe_with_string_target(capsys):
             "feature_string": [str(i) for i in range(10)],
         }
     )
-    y = pd.Series([str(i) for i in range(10)], name="target_test")
+    y = (np.array([str(i) for i in range(10)]), "target_test")
 
     # initialise object
     eda = ExploratoryDataAnalysis(data=x, target=y, ncols=2)
 
     # run object
     eda()
+
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        eda.data = x
+    with pytest.raises(AttributeError):
+        eda.target = y
 
     # check printing
     print(eda, end="")
@@ -340,6 +349,10 @@ def test_multi_with_int_category_dataframe_without_target(capsys):
     # run object
     eda()
 
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        eda.data = x
+
     # check printing
     print(eda, end="")
     captured = capsys.readouterr()
@@ -353,9 +366,17 @@ def test_multi_with_list(capsys):
     y_list = [0, 1]
     x_array = np.array([[1, 2], [1, 2]])
     y_array = np.array([0, 1])
+    x_array_long = np.array([[1, 2], [1, 2], [1, 2]])
+    y_array_long = np.array([0, 1, 2])
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
         ExploratoryDataAnalysis(data=x_list, ncols=2, target=y_array)
     with pytest.raises(TypeError):
         ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_list)
+
+    # check inability to initiate with unevenly sized inputs
+    with pytest.raises(ValueError):
+        ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_array_long)
+    with pytest.raises(ValueError):
+        ExploratoryDataAnalysis(data=x_array_long, ncols=2, target=y_array)
