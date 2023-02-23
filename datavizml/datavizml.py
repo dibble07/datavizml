@@ -133,7 +133,7 @@ class SingleDistribution:
             if self.has_target
             else "no target provided"
         )
-        score_val = self.score if hasattr(self, "score") else "not calculated"
+        score_val = f"{self.score:0.3f}" if hasattr(self, "score") else "not calculated"
 
         # attribute related strings
         feature_str = f"feature: {self.feature.name} ({self.feature_dtype})"

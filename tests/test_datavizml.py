@@ -4,28 +4,44 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
+np.random.seed(42)
 
-def test_single_with_list():
+
+def test_single_improper_inputs():
     # initialise inputs
     _, ax = plt.subplots()
-    x_list = [1, 2]
-    y_list = [0, 1]
-    x_array = np.array([1, 2])
-    y_array = np.array([0, 1])
-    x_array_long = np.array([1, 2, 3])
-    y_array_long = np.array([0, 1, 2])
+    list_ = [0, 1]
+    array = np.array(list)
+    array_long = np.arange(10_000)
+    array_wide = np.array([[0, 1], [0, 1], [0, 1]])
+
+    # check large values use axis formatter
+    sd = SingleDistribution(feature=array_long, ax=ax, target=array_long)
+    sd()
+
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        sd.feature = array
+    with pytest.raises(AttributeError):
+        sd.target = array
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
-        SingleDistribution(feature=x_list, ax=ax, target=y_array)
+        SingleDistribution(feature=list_, ax=ax, target=array)
     with pytest.raises(TypeError):
-        SingleDistribution(feature=x_array, ax=ax, target=y_list)
+        SingleDistribution(feature=array, ax=ax, target=list_)
+
+    # check inability to initiate with 2d arrays
+    with pytest.raises(ValueError):
+        SingleDistribution(feature=array, ax=ax, target=array_wide)
+    with pytest.raises(ValueError):
+        SingleDistribution(feature=array_wide, ax=ax, target=array)
 
     # check inability to initiate with unevenly sized inputs
     with pytest.raises(ValueError):
-        SingleDistribution(feature=x_array, ax=ax, target=y_array_long)
+        SingleDistribution(feature=array, ax=ax, target=array_long)
     with pytest.raises(ValueError):
-        SingleDistribution(feature=x_array_long, ax=ax, target=y_array)
+        SingleDistribution(feature=array_long, ax=ax, target=array)
 
 
 def test_single_prescribed_score():
@@ -52,233 +68,127 @@ def test_single_prescribed_score():
     assert sd.score == 0.1
 
 
-@pytest.mark.parametrize("type_feature", ["array", "series"])  # "list",
+@pytest.mark.parametrize(
+    "dtype_target", ["Int64", "Float64", "string", "category", "boolean"]
+)  #
+@pytest.mark.parametrize("type_target", ["array", "series"])
 @pytest.mark.parametrize(
     "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
 )
-def test_single_with_series_with_boolean_target(capsys, type_feature, dtype_feature):
-    # check config is testable
-    config_testable = not (type_feature == "array" and dtype_feature == "category")
+@pytest.mark.parametrize("type_feature", ["array", "series"])
+def test_single_with_target(type_feature, dtype_feature, type_target, dtype_target):
+    # check config is testable - category is only a dtype for numpy arrays
+    config_testable = not (
+        type_feature == "array" and dtype_feature == "category"
+    ) and not (type_target == "array" and dtype_target == "category")
 
     if config_testable:
-        # initialise raw values
-        x_raw = ([i for i in range(5)] + [np.nan]) * 4
-        y = [True, True, True, False, False, False] * 4
+        # initialise raw values - include a missing value and a modal value
+        raw = ([0, 1, 2, 3, 4, 4, np.nan]) * 100
 
-        # process raw values based on type
+        # process raw x values based on type
         if dtype_feature == "Float64":
-            x = [i + 0.01 if not np.isnan(i) else i for i in x_raw]
+            # add small value to avoid being downcast to integer
+            x = [i + 0.01 if not np.isnan(i) else i for i in raw]
         elif dtype_feature in ["string", "category"]:
-            x = [str(i) if not np.isnan(i) else i for i in x_raw]
+            # category is a dtype only for pandas - start with string
+            x = [str(i) if not np.isnan(i) else i for i in raw]
         elif dtype_feature == "boolean":
+            # convert to boolean - convert missing values for arrays as boolean arrays aren't nullable
             if type_feature == "array":
-                x = [i < 2.5 for i in x_raw]
+                x = [i < 2.5 for i in raw]
             else:
-                x = [i < 2.5 if not np.isnan(i) else i for i in x_raw]
+                x = [i < 2.5 if not np.isnan(i) else i for i in raw]
         else:
-            x = x_raw
+            x = raw
 
-        # convert values to inputs
+        # process raw y values based on type
+        if dtype_target == "Float64":
+            # add small value to avoid being downcast to integer
+            y = [i + 0.01 if not np.isnan(i) else i for i in raw]
+        elif dtype_target in ["string", "category"]:
+            # category is a dtype only for pandas - start with string
+            y = [str(i) if not np.isnan(i) else i for i in raw]
+        elif dtype_target == "boolean":
+            # convert to boolean - convert missing values for arrays as boolean arrays aren't nullable
+            if type_target == "array":
+                y = [i < 2.5 for i in raw]
+            else:
+                y = [i < 2.5 if not np.isnan(i) else i for i in raw]
+        else:
+            y = raw
+
+        # convert x values to inputs
+        x_name = f"x_{dtype_feature}".capitalize()
         if type_feature == "array":
-            x_name = f"unnamed_feature_{type_feature}_{dtype_feature}"
-            x_final = (np.array(x), x_name)
-            y_name = f"unnamed_target_{type_feature}_{dtype_feature}"
-            y_final = (np.array(y), y_name)
+            x_final = np.array(x)
         elif type_feature == "series":
-            x_name = "feature_test"
             x_final = pd.Series(x, name=x_name)
-            y_name = "target_test"
+
+        # convert y values to inputs
+        y_name = f"y_{dtype_target}".capitalize()
+        if type_target == "array":
+            y_final = np.array(y)
+        elif type_target == "series":
             y_final = pd.Series(y, name=y_name)
 
         # pandas specific dtype conversion
         if dtype_feature == "category":
             x_final = x_final.astype("category")
+        if dtype_target == "category":
+            y_final = y_final.astype("category")
+
+        # decide target analysis type
+        if dtype_target in ["Int64", "Float64"]:
+            target_analysis_type = "Regression"
+        elif dtype_target in ["string", "category", "boolean"]:
+            target_analysis_type = "Classification"
+
+        # set expected PPS score
+        if dtype_feature == "boolean":
+            if dtype_target == "boolean":
+                expected_score = 1
+            elif dtype_target in ["string", "category"]:
+                # performance is slightly worse for arrays because the nulls are considered a category
+                if type_feature == "array" and type_target == "array":
+                    expected_score = 0.087
+                else:
+                    expected_score = 0.139
+            elif dtype_target in ["Int64", "Float64"]:
+                expected_score = 0.577
+        else:
+            expected_score = 1
 
         # initialise object
         _, ax = plt.subplots()
-        sd = SingleDistribution(feature=x_final, ax=ax, target=y_final)
+        sd = SingleDistribution(
+            feature=(x_final, x_name), ax=ax, target=(y_final, y_name)
+        )
 
         # check printing
-        print(sd, end="")
-        captured = capsys.readouterr()
-        expected = f"feature: {x_name} ({dtype_feature}), target: {y_name} (boolean - Classification), score: not calculated"
-        assert expected == captured.out
+        captured = sd.__str__()
+        expected = f"feature: {x_name} ({dtype_feature}), target: {y_name} ({dtype_target} - {target_analysis_type}), score: not calculated"
+        assert expected == captured
 
         # check missing proportion value
         if type_feature == "array" and dtype_feature in ["boolean", "string"]:
             expected_missing_proportion = 0
         else:
-            expected_missing_proportion = 1 / 6
+            expected_missing_proportion = 1 / 7
         assert sd.missing_proportion == expected_missing_proportion
-
-        # check inability to reset values
-        with pytest.raises(AttributeError):
-            sd.target = x
-        with pytest.raises(AttributeError):
-            sd.target = y
 
         # call object
         sd()
 
-        # check printing
-        print(sd, end="")
-        captured = capsys.readouterr()
-        expected = f"feature: {x_name} ({dtype_feature}), target: {y_name} (boolean - Classification), score: 1.0"
-        assert expected == captured.out
-
         # check score
-        assert sd.score == 1.0
+        assert np.round(sd.score, 3) == expected_score
 
+        # check printing
+        captured = sd.__str__()
+        expected = f"feature: {x_name} ({dtype_feature}), target: {y_name} ({dtype_target} - {target_analysis_type}), score: {expected_score:0.3f}"
+        assert expected == captured
 
-def test_single_with_boolean_pandas_with_string_target(capsys):
-    # initialise inputs
-    _, ax = plt.subplots()
-    x = pd.Series(
-        [False, False, True, np.nan] * 4,
-        name="feature_test",
-    )
-    y = pd.Series(["one", "one", "two", "two"] * 4, name="target_test")
-
-    # initialise object
-    sd = SingleDistribution(feature=x, ax=ax, target=y)
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: feature_test (boolean), target: target_test (string - Classification), score: not calculated"
-    assert expected == captured.out
-
-    # check missing proportion value
-    assert sd.missing_proportion == 0.25
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        sd.target = y
-
-    # call object
-    sd()
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: feature_test (boolean), target: target_test (string - Classification), score: 1.0"
-    assert expected == captured.out
-
-    # check score
-    assert sd.score == 1.0
-
-
-def test_single_with_boolean_pandas_with_categorical_target(capsys):
-    # initialise inputs
-    _, ax = plt.subplots()
-    x = pd.Series(
-        [False, False, True, np.nan] * 4,
-        name="feature_test",
-    )
-    y = pd.Series(["one", "one", "two", "two"] * 4, name="target_test").astype(
-        "category"
-    )
-
-    # initialise object
-    sd = SingleDistribution(feature=x, ax=ax, target=y)
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: feature_test (boolean), target: target_test (category - Classification), score: not calculated"
-    assert expected == captured.out
-
-    # check missing proportion value
-    assert sd.missing_proportion == 0.25
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        sd.target = y
-
-    # call object
-    sd()
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: feature_test (boolean), target: target_test (category - Classification), score: 1.0"
-    assert expected == captured.out
-
-    # check score
-    assert sd.score == 1.0
-
-
-def test_single_with_interger_array_without_target(capsys):
-    # initialise inputs
-    _, ax = plt.subplots()
-    x = np.array(list(range(16 - 1)) + [np.nan]) * 1000
-    x_fail = np.repeat(x.reshape(-1, 1), 3, axis=1)
-
-    # check inability to reset values
-    with pytest.raises(ValueError):
-        SingleDistribution(feature=x_fail, ax=ax)
-
-    # initialise object
-    sd = SingleDistribution(feature=x, ax=ax)
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: unnamed_feature (Int64), target: no target provided, score: not calculated"
-    assert expected == captured.out
-
-    # check missing proportion value
-    assert sd.missing_proportion == 1 / 16
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        sd.feature = x
-
-    # call object
-    sd()
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = (
-        "feature: unnamed_feature (Int64), target: no target provided, score: 0.0"
-    )
-    assert expected == captured.out
-
-    # check score
-    assert sd.score == 0.0
-
-
-def test_single_with_float_pandas_with_float_target(capsys):
-    # initialise inputs
-    _, ax = plt.subplots()
-    x = pd.Series(
-        [(x - 10) / 2 for x in range(20)] * 10 + [np.nan],
-        name="feature_test",
-    )
-    y = x * x
-    y.name = "target_test"
-
-    # initialise object
-    sd = SingleDistribution(feature=x, ax=ax, target=y)
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: feature_test (Float64), target: target_test (Float64 - Regression), score: not calculated"
-    assert expected == captured.out
-
-    # call object
-    sd()
-
-    # check printing
-    print(sd, end="")
-    captured = capsys.readouterr()
-    expected = "feature: feature_test (Float64), target: target_test (Float64 - Regression), score: 1.0"
-    assert expected == captured.out
-
-    # check score
-    assert sd.score == 1.0
+        plt.close()
 
 
 def test_multi_with_float_series_with_float_target(capsys):
