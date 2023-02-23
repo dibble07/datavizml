@@ -49,6 +49,47 @@ def test_single_prescribed_score():
     assert sd.score == 0.1
 
 
+@pytest.mark.parametrize("dtype,factor", [("Int64", 0), ("Float64", 0.1)])
+def test_single_with_series_with_boolean_target(capsys, dtype, factor):
+    # initialise inputs
+    x_raw = ([i + factor for i in range(5)] + [np.nan]) * 4
+    y_raw = [True, True, False, True, False, False] * 4
+    x = pd.Series(
+        x_raw,
+        name="feature_test",
+    ).astype(dtype)
+    y = pd.Series(y_raw, name="target_test")
+
+    # initialise object
+    _, ax = plt.subplots()
+    sd = SingleDistribution(feature=x, ax=ax, target=y)
+
+    # check printing
+    print(sd, end="")
+    captured = capsys.readouterr()
+    expected = f"feature: feature_test ({dtype}), target: target_test (boolean - Classification), score: not calculated"
+    assert expected == captured.out
+
+    # check missing proportion value
+    assert sd.missing_proportion == 1 / 6
+
+    # check inability to reset values
+    with pytest.raises(AttributeError):
+        sd.target = y
+
+    # call object
+    sd()
+
+    # check printing
+    print(sd, end="")
+    captured = capsys.readouterr()
+    expected = f"feature: feature_test ({dtype}), target: target_test (boolean - Classification), score: 1.0"
+    assert expected == captured.out
+
+    # check score
+    assert sd.score == 1.0
+
+
 def test_single_with_boolean_pandas_with_boolean_target(capsys):
     # initialise inputs
     _, ax = plt.subplots()
