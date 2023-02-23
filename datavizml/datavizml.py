@@ -9,7 +9,7 @@ from statsmodels.stats.proportion import proportion_confint
 
 
 # convert to series
-def to_series(input):
+def to_series(input, name):
     """A method to convert inputs into a pandas series"""
     # convert array to series
     if isinstance(input, pd.Series):
@@ -19,7 +19,7 @@ def to_series(input):
         ndim = output.ndim
         if ndim > 1:
             raise ValueError(f"Input has {ndim} dimensions but only 1 is allowed")
-        return pd.Series(output, name="unnamed")
+        return pd.Series(output, name=name)
     else:
         raise TypeError(
             f"Input is of {input.__class__.__name__} type which is not valid"
@@ -56,11 +56,11 @@ class SingleDistribution:
     """A graphical summary of a given feature and its relationship to a target
 
     :param feature: Feature to be analysed
-    :type feature: pandas Series
+    :type feature: pandas Series, numpy array or tuple(numpy array, name)
     :param ax: Axes to plot on
     :type ax: matplotlib Axes
     :param target: Target to be predicted
-    :type target: pandas Series, optional
+    :type target: pandas Series, numpy array or tuple(numpy array, name), optional
     :param score: Precomputed score to avoid recalculation
     :type score: float, optional
     :param binning_threshold: Maximum number of distinct values in the column before binning, defaults to 12
@@ -357,8 +357,14 @@ class SingleDistribution:
             raise AttributeError("This attribute has already been set")
 
         else:
+            # unpack value and name
+            if isinstance(feature, tuple):
+                feature, name = feature
+            else:
+                name = "unnamed_feature"
+
             # convert to series and set
-            self.__feature = to_series(feature)
+            self.__feature = to_series(feature, name=name)
 
     # target getter
     @property
@@ -374,8 +380,14 @@ class SingleDistribution:
             raise AttributeError("This attribute has already been set")
 
         else:
+            # unpack value and name
+            if isinstance(target, tuple):
+                target, name = target
+            else:
+                name = "unnamed_target"
+
             # convert to series and set
-            self.__target = to_series(target)
+            self.__target = to_series(target, name=name)
 
     # score getter
     @property
@@ -564,5 +576,11 @@ class ExploratoryDataAnalysis:
             raise AttributeError("This attribute has already been set")
 
         else:
+            # unpack value and name
+            if isinstance(target, tuple):
+                target, name = target
+            else:
+                name = "unnamed_target"
+
             # convert to series and set
-            self.__target = to_series(target)
+            self.__target = to_series(target, name=name)
