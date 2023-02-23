@@ -69,8 +69,9 @@ def test_single_prescribed_score():
 
 
 @pytest.mark.parametrize(
-    "dtype_target", ["Int64", "Float64", "string", "category", "boolean"]
-)  #
+    "dtype_target",
+    ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
+)
 @pytest.mark.parametrize("type_target", ["array", "series"])
 @pytest.mark.parametrize(
     "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
@@ -84,7 +85,7 @@ def test_single_with_target(type_feature, dtype_feature, type_target, dtype_targ
 
     if config_testable:
         # initialise raw values - include a missing value and a modal value
-        raw = ([0, 1, 2, 3, 4, 4, np.nan]) * 100
+        raw = ([0, 1, 2, 3, 4, 4, 4, 4, np.nan]) * 100
 
         # process raw x values based on type
         if dtype_feature == "Float64":
@@ -99,7 +100,7 @@ def test_single_with_target(type_feature, dtype_feature, type_target, dtype_targ
                 x = [i < 2.5 for i in raw]
             else:
                 x = [i < 2.5 if not np.isnan(i) else i for i in raw]
-        else:
+        elif dtype_feature == "Int64":
             x = raw
 
         # process raw y values based on type
@@ -115,8 +116,10 @@ def test_single_with_target(type_feature, dtype_feature, type_target, dtype_targ
                 y = [i < 2.5 for i in raw]
             else:
                 y = [i < 2.5 if not np.isnan(i) else i for i in raw]
-        else:
+        elif dtype_target == "Int64":
             y = raw
+        elif dtype_target == "no target provided":
+            y = None
 
         # convert x values to inputs
         x_name = f"x_{dtype_feature}".capitalize()
@@ -127,7 +130,9 @@ def test_single_with_target(type_feature, dtype_feature, type_target, dtype_targ
 
         # convert y values to inputs
         y_name = f"y_{dtype_target}".capitalize()
-        if type_target == "array":
+        if y is None:
+            y_final = y
+        elif type_target == "array":
             y_final = np.array(y)
         elif type_target == "series":
             y_final = pd.Series(y, name=y_name)
@@ -140,41 +145,64 @@ def test_single_with_target(type_feature, dtype_feature, type_target, dtype_targ
 
         # decide target analysis type
         if dtype_target in ["Int64", "Float64"]:
-            target_analysis_type = "Regression"
+            target_analysis_type = "regression"
         elif dtype_target in ["string", "category", "boolean"]:
-            target_analysis_type = "Classification"
+            target_analysis_type = "classification"
 
-        # set expected PPS score
-        if dtype_feature == "boolean":
-            if dtype_target == "boolean":
-                expected_score = 1
-            elif dtype_target in ["string", "category"]:
-                # performance is slightly worse for arrays because the nulls are considered a category
-                if type_feature == "array" and type_target == "array":
-                    expected_score = 0.087
+        # set expected score
+        if dtype_target == "no target provided":
+            if dtype_feature in ["Int64", "Float64"]:
+                expected_score = 0.139
+            elif dtype_feature in ["string", "category"]:
+                if type_feature == "array":
+                    expected_score = 0.444
                 else:
-                    expected_score = 0.139
-            elif dtype_target in ["Int64", "Float64"]:
-                expected_score = 0.577
+                    expected_score = 0.5
+            elif dtype_feature in ["boolean"]:
+                if type_feature == "array":
+                    expected_score = 0.667
+                else:
+                    expected_score = 0.625
         else:
-            expected_score = 1
+            if dtype_feature == "boolean":
+                if dtype_target == "boolean":
+                    expected_score = 1
+                elif dtype_target in ["string", "category"]:
+                    # performance is slightly worse for arrays because the nulls are considered a category
+                    if type_feature == "array" and type_target == "array":
+                        expected_score = 0.189
+                    else:
+                        expected_score = 0.260
+                elif dtype_target in ["Int64", "Float64"]:
+                    expected_score = 0.634
+            else:
+                expected_score = 1
 
         # initialise object
         _, ax = plt.subplots()
         sd = SingleDistribution(
-            feature=(x_final, x_name), ax=ax, target=(y_final, y_name)
+            feature=(x_final, x_name),
+            ax=ax,
+            target=(y_final, y_name)
+            if type_target == "array" and dtype_target != "no target provided"
+            else y_final,
         )
 
         # check printing
         captured = sd.__str__()
-        expected = f"feature: {x_name} ({dtype_feature}), target: {y_name} ({dtype_target} - {target_analysis_type}), score: not calculated"
+        target_str = (
+            dtype_target
+            if dtype_target == "no target provided"
+            else f"{y_name} ({dtype_target} - {target_analysis_type})"
+        )
+        expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: not calculated"
         assert expected == captured
 
         # check missing proportion value
         if type_feature == "array" and dtype_feature in ["boolean", "string"]:
             expected_missing_proportion = 0
         else:
-            expected_missing_proportion = 1 / 7
+            expected_missing_proportion = 1 / 9
         assert sd.missing_proportion == expected_missing_proportion
 
         # call object
@@ -185,13 +213,18 @@ def test_single_with_target(type_feature, dtype_feature, type_target, dtype_targ
 
         # check printing
         captured = sd.__str__()
-        expected = f"feature: {x_name} ({dtype_feature}), target: {y_name} ({dtype_target} - {target_analysis_type}), score: {expected_score:0.3f}"
+        target_str = (
+            dtype_target
+            if dtype_target == "no target provided"
+            else f"{y_name} ({dtype_target} - {target_analysis_type})"
+        )
+        expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: {expected_score:0.3f}"
         assert expected == captured
 
         plt.close()
 
 
-def test_multi_with_float_series_with_float_target(capsys):
+def test_multi_with_float_series_with_float_target():
     # initialise inputs
     _, ax = plt.subplots()
     x = pd.Series(
@@ -208,13 +241,12 @@ def test_multi_with_float_series_with_float_target(capsys):
     eda()
 
     # check printing
-    print(eda, end="")
-    captured = capsys.readouterr()
+    captured = eda.__str__()
     expected = "features: feature_test (Float64)\ntarget: target_test (Float64)"
-    assert expected == captured.out
+    assert expected == captured
 
 
-def test_multi_with_float_string_dataframe_with_string_target(capsys):
+def test_multi_with_float_string_dataframe_with_string_target():
     # initialise inputs
     x = pd.DataFrame(
         {
@@ -237,13 +269,12 @@ def test_multi_with_float_string_dataframe_with_string_target(capsys):
         eda.target = y
 
     # check printing
-    print(eda, end="")
-    captured = capsys.readouterr()
+    captured = eda.__str__()
     expected = "features: feature_float, feature_string (Float64, string)\ntarget: target_test (string)"
-    assert expected == captured.out
+    assert expected == captured
 
 
-def test_multi_with_int_category_dataframe_without_target(capsys):
+def test_multi_with_int_category_dataframe_without_target():
     # initialise inputs
     x = pd.DataFrame(
         {
@@ -264,13 +295,12 @@ def test_multi_with_int_category_dataframe_without_target(capsys):
         eda.data = x
 
     # check printing
-    print(eda, end="")
-    captured = capsys.readouterr()
+    captured = eda.__str__()
     expected = "features: feature_int, feature_bool, feature_category (Int64, boolean, category)\ntarget: no target provided"
-    assert expected == captured.out
+    assert expected == captured
 
 
-def test_multi_with_list(capsys):
+def test_multi_with_list():
     # initialise inputs
     x_list = [[1, 2], [1, 2]]
     y_list = [0, 1]
