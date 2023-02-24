@@ -1,4 +1,5 @@
-from datavizml.datavizml import SingleDistribution, ExploratoryDataAnalysis
+from datavizml.singledistribution import SingleDistribution
+from datavizml.exploratorydataanalysis import ExploratoryDataAnalysis
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
