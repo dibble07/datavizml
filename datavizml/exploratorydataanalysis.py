@@ -6,7 +6,7 @@ class ExploratoryDataAnalysis:
     """A graphical summary of all given features and their relationship to a target
 
     :param data: Features to be analysed
-    :type data: pandas Series
+    :type data: pandas Series of pandas DataFrame
     :param target: Target to be predicted
     :type target: pandas Series, optional
     :param ncols: Number of columns to use in figure
@@ -162,11 +162,5 @@ class ExploratoryDataAnalysis:
             raise AttributeError("This attribute has already been set")
 
         else:
-            # unpack value and name
-            if isinstance(target, tuple):
-                target, name = target
-            else:
-                name = "unnamed_target"
-
             # convert to series and set
-            self.__target = utils.to_series(target, name=name)
+            self.__target = utils.to_series(target)
