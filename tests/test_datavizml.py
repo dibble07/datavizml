@@ -78,7 +78,7 @@ def test_single_prescribed_score():
     "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
 )
 @pytest.mark.parametrize("type_feature", ["array", "series"])
-def test_single_with_target(type_feature, dtype_feature, type_target, dtype_target):
+def test_single(type_feature, dtype_feature, type_target, dtype_target):
     # check config is testable - category is only a dtype for numpy arrays
     config_testable = not (
         type_feature == "array" and dtype_feature == "category"
@@ -86,7 +86,7 @@ def test_single_with_target(type_feature, dtype_feature, type_target, dtype_targ
 
     if config_testable:
         # initialise raw values - include a missing value and a modal value
-        raw = ([0, 1, 2, 3, 4, 4, 4, 4, np.nan]) * 100
+        raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
         # process raw x values based on type
         if dtype_feature == "Float64":
@@ -225,83 +225,7 @@ def test_single_with_target(type_feature, dtype_feature, type_target, dtype_targ
         plt.close()
 
 
-def test_multi_with_float_series_with_float_target():
-    # initialise inputs
-    _, ax = plt.subplots()
-    x = pd.Series(
-        [(x - 10) / 2 for x in range(20)] * 10 + [np.nan],
-        name="feature_test",
-    )
-    y = x * x
-    y.name = "target_test"
-
-    # initialise object
-    eda = ExploratoryDataAnalysis(data=x, target=y, ncols=1)
-
-    # run object
-    eda()
-
-    # check printing
-    captured = eda.__str__()
-    expected = "features: feature_test (Float64)\ntarget: target_test (Float64)"
-    assert expected == captured
-
-
-def test_multi_with_float_string_dataframe_with_string_target():
-    # initialise inputs
-    x = pd.DataFrame(
-        {
-            "feature_float": [i / 10 for i in range(10)],
-            "feature_string": [str(i) for i in range(10)],
-        }
-    )
-    y = (np.array([str(i) for i in range(10)]), "target_test")
-
-    # initialise object
-    eda = ExploratoryDataAnalysis(data=x, target=y, ncols=2)
-
-    # run object
-    eda()
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        eda.data = x
-    with pytest.raises(AttributeError):
-        eda.target = y
-
-    # check printing
-    captured = eda.__str__()
-    expected = "features: feature_float, feature_string (Float64, string)\ntarget: target_test (string)"
-    assert expected == captured
-
-
-def test_multi_with_int_category_dataframe_without_target():
-    # initialise inputs
-    x = pd.DataFrame(
-        {
-            "feature_int": [i for i in range(10)],
-            "feature_bool": [i % 2 == 0 for i in range(10)],
-            "feature_category": [str(i) for i in range(10)],
-        }
-    ).astype({"feature_category": "category"})
-
-    # initialise object
-    eda = ExploratoryDataAnalysis(data=x, ncols=2)
-
-    # run object
-    eda()
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        eda.data = x
-
-    # check printing
-    captured = eda.__str__()
-    expected = "features: feature_int, feature_bool, feature_category (Int64, boolean, category)\ntarget: no target provided"
-    assert expected == captured
-
-
-def test_multi_with_list():
+def test_multi_improper_inputs():
     # initialise inputs
     x_list = [[1, 2], [1, 2]]
     y_list = [0, 1]
@@ -309,6 +233,13 @@ def test_multi_with_list():
     y_array = np.array([0, 1])
     x_array_long = np.array([[1, 2], [1, 2], [1, 2]])
     y_array_long = np.array([0, 1, 2])
+
+    # check inability to reset values
+    eda = ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_array)
+    with pytest.raises(AttributeError):
+        eda.data = x_array
+    with pytest.raises(AttributeError):
+        eda.target = y_array
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
@@ -321,3 +252,121 @@ def test_multi_with_list():
         ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_array_long)
     with pytest.raises(ValueError):
         ExploratoryDataAnalysis(data=x_array_long, ncols=2, target=y_array)
+
+
+@pytest.mark.parametrize(
+    "dtype_target",
+    ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
+)
+@pytest.mark.parametrize("type_target", ["array", "series"])
+@pytest.mark.parametrize("type_data", ["dataframe", "series"])  # "array",
+def test_multi(type_data, type_target, dtype_target):
+    # check config is testable - category is only a dtype for numpy arrays
+    config_testable = not (type_target == "array" and dtype_target == "category")
+
+    if config_testable:
+        # initialise raw values - include a missing value and a modal value
+        raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
+
+        # process raw x values based on type
+        x = {
+            "Int64": raw,
+            "Float64": [i + 0.01 if not np.isnan(i) else i for i in raw],
+            "string": [str(i) if not np.isnan(i) else i for i in raw],
+            "category": [str(i) if not np.isnan(i) else i for i in raw],
+            "boolean": [i < 2.5 for i in raw]
+            if type_data == "array"
+            else [i < 2.5 if not np.isnan(i) else i for i in raw],
+        }
+
+        # process raw y values based on type
+        if dtype_target == "Float64":
+            # add small value to avoid being downcast to integer
+            y = [i + 0.01 if not np.isnan(i) else i for i in raw]
+        elif dtype_target in ["string", "category"]:
+            # category is a dtype only for pandas - start with string
+            y = [str(i) if not np.isnan(i) else i for i in raw]
+        elif dtype_target == "boolean":
+            # convert to boolean - convert missing values for arrays as boolean arrays aren't nullable
+            if type_target == "array":
+                y = [i < 2.5 for i in raw]
+            else:
+                y = [i < 2.5 if not np.isnan(i) else i for i in raw]
+        elif dtype_target == "Int64":
+            y = raw
+        elif dtype_target == "no target provided":
+            y = None
+
+        # convert x values to inputs
+        x_names_raw = [f"x_{i}".capitalize() for i in x.keys()]
+        # if type_data == "array":
+        #     x_final = np.array(list(x.values()))
+        # el
+        if type_data == "dataframe":
+            x_final_list = [pd.DataFrame(x)]
+            x_final_list[0].columns = x_names_raw
+            x_names_list = [x_names_raw]
+            x_types_list = [x.keys()]
+        elif type_data == "series":
+            x_final_list = [
+                pd.Series(val, name=name) for val, name in zip(x.values(), x_names_raw)
+            ]
+            x_names_list = [[i] for i in x_names_raw]
+            x_types_list = [[i] for i in x.keys()]
+
+        # convert y values to inputs
+        y_name = f"y_{dtype_target}".capitalize()
+        if y is None:
+            y_final = y
+        elif type_target == "array":
+            y_final = np.array(y)
+        elif type_target == "series":
+            y_final = pd.Series(y, name=y_name)
+
+        # pandas specific dtype conversion
+        if type_data == "dataframe":
+            x_final_list[0] = x_final_list[0].astype(
+                {name.capitalize(): type_ for type_, name in zip(x.keys(), x_names_raw)}
+            )
+        elif type_data == "series":
+            x_final_list = [i.astype(type_) for type_, i in zip(x.keys(), x_final_list)]
+        if dtype_target == "category":
+            y_final = y_final.astype("category")
+
+        # initialise objects
+        eda_list = []
+        for x_final, x_names in zip(x_final_list, x_names_list):
+            eda_list.append(
+                ExploratoryDataAnalysis(
+                    data=(x_final, x_names) if type_data == "array" else x_final,
+                    ncols=2,
+                    target=(y_final, y_name)
+                    if type_target == "array" and dtype_target != "no target provided"
+                    else y_final,
+                )
+            )
+
+        # loop over all eda objects created
+        for eda, x_names, x_types in zip(eda_list, x_names_list, x_types_list):
+            # check indexing
+            assert isinstance(eda[0], SingleDistribution)
+
+            # check printing
+            captured = eda.__str__()
+            data_str = (
+                ", ".join(x_names),
+                ", ".join(sorted(x_types)),
+            )
+            target_str = (
+                dtype_target
+                if dtype_target == "no target provided"
+                else f"{y_name} ({dtype_target})"
+            )
+            expected = f"features: {data_str[0]} ({data_str[1]})\ntarget: {target_str}"
+            assert expected == captured
+
+            # call object
+            eda()
+
+            # close figure to save memory
+            plt.close(eda.fig)
