@@ -69,160 +69,160 @@ def test_single_prescribed_score():
     assert sd.score == 0.1
 
 
-# @pytest.mark.parametrize(
-#     "dtype_target",
-#     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
-# )
-# @pytest.mark.parametrize("type_target", ["array", "series"])
-# @pytest.mark.parametrize(
-#     "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
-# )
-# @pytest.mark.parametrize("type_feature", ["array", "series"])
-# def test_single_with_target(type_feature, dtype_feature, type_target, dtype_target):
-#     # check config is testable - category is only a dtype for numpy arrays
-#     config_testable = not (
-#         type_feature == "array" and dtype_feature == "category"
-#     ) and not (type_target == "array" and dtype_target == "category")
+@pytest.mark.parametrize(
+    "dtype_target",
+    ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
+)
+@pytest.mark.parametrize("type_target", ["array", "series"])
+@pytest.mark.parametrize(
+    "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
+)
+@pytest.mark.parametrize("type_feature", ["array", "series"])
+def test_single(type_feature, dtype_feature, type_target, dtype_target):
+    # check config is testable - category is only a dtype for numpy arrays
+    config_testable = not (
+        type_feature == "array" and dtype_feature == "category"
+    ) and not (type_target == "array" and dtype_target == "category")
 
-#     if config_testable:
-#         # initialise raw values - include a missing value and a modal value
-#         raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
+    if config_testable:
+        # initialise raw values - include a missing value and a modal value
+        raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
-#         # process raw x values based on type
-#         if dtype_feature == "Float64":
-#             # add small value to avoid being downcast to integer
-#             x = [i + 0.01 if not np.isnan(i) else i for i in raw]
-#         elif dtype_feature in ["string", "category"]:
-#             # category is a dtype only for pandas - start with string
-#             x = [str(i) if not np.isnan(i) else i for i in raw]
-#         elif dtype_feature == "boolean":
-#             # convert to boolean - convert missing values for arrays as boolean arrays aren't nullable
-#             if type_feature == "array":
-#                 x = [i < 2.5 for i in raw]
-#             else:
-#                 x = [i < 2.5 if not np.isnan(i) else i for i in raw]
-#         elif dtype_feature == "Int64":
-#             x = raw
+        # process raw x values based on type
+        if dtype_feature == "Float64":
+            # add small value to avoid being downcast to integer
+            x = [i + 0.01 if not np.isnan(i) else i for i in raw]
+        elif dtype_feature in ["string", "category"]:
+            # category is a dtype only for pandas - start with string
+            x = [str(i) if not np.isnan(i) else i for i in raw]
+        elif dtype_feature == "boolean":
+            # convert to boolean - convert missing values for arrays as boolean arrays aren't nullable
+            if type_feature == "array":
+                x = [i < 2.5 for i in raw]
+            else:
+                x = [i < 2.5 if not np.isnan(i) else i for i in raw]
+        elif dtype_feature == "Int64":
+            x = raw
 
-#         # process raw y values based on type
-#         if dtype_target == "Float64":
-#             # add small value to avoid being downcast to integer
-#             y = [i + 0.01 if not np.isnan(i) else i for i in raw]
-#         elif dtype_target in ["string", "category"]:
-#             # category is a dtype only for pandas - start with string
-#             y = [str(i) if not np.isnan(i) else i for i in raw]
-#         elif dtype_target == "boolean":
-#             # convert to boolean - convert missing values for arrays as boolean arrays aren't nullable
-#             if type_target == "array":
-#                 y = [i < 2.5 for i in raw]
-#             else:
-#                 y = [i < 2.5 if not np.isnan(i) else i for i in raw]
-#         elif dtype_target == "Int64":
-#             y = raw
-#         elif dtype_target == "no target provided":
-#             y = None
+        # process raw y values based on type
+        if dtype_target == "Float64":
+            # add small value to avoid being downcast to integer
+            y = [i + 0.01 if not np.isnan(i) else i for i in raw]
+        elif dtype_target in ["string", "category"]:
+            # category is a dtype only for pandas - start with string
+            y = [str(i) if not np.isnan(i) else i for i in raw]
+        elif dtype_target == "boolean":
+            # convert to boolean - convert missing values for arrays as boolean arrays aren't nullable
+            if type_target == "array":
+                y = [i < 2.5 for i in raw]
+            else:
+                y = [i < 2.5 if not np.isnan(i) else i for i in raw]
+        elif dtype_target == "Int64":
+            y = raw
+        elif dtype_target == "no target provided":
+            y = None
 
-#         # convert x values to inputs
-#         x_name = f"x_{dtype_feature}".capitalize()
-#         if type_feature == "array":
-#             x_final = np.array(x)
-#         elif type_feature == "series":
-#             x_final = pd.Series(x, name=x_name)
+        # convert x values to inputs
+        x_name = f"x_{dtype_feature}".capitalize()
+        if type_feature == "array":
+            x_final = np.array(x)
+        elif type_feature == "series":
+            x_final = pd.Series(x, name=x_name)
 
-#         # convert y values to inputs
-#         y_name = f"y_{dtype_target}".capitalize()
-#         if y is None:
-#             y_final = y
-#         elif type_target == "array":
-#             y_final = np.array(y)
-#         elif type_target == "series":
-#             y_final = pd.Series(y, name=y_name)
+        # convert y values to inputs
+        y_name = f"y_{dtype_target}".capitalize()
+        if y is None:
+            y_final = y
+        elif type_target == "array":
+            y_final = np.array(y)
+        elif type_target == "series":
+            y_final = pd.Series(y, name=y_name)
 
-#         # pandas specific dtype conversion
-#         if dtype_feature == "category":
-#             x_final = x_final.astype("category")
-#         if dtype_target == "category":
-#             y_final = y_final.astype("category")
+        # pandas specific dtype conversion
+        if dtype_feature == "category":
+            x_final = x_final.astype("category")
+        if dtype_target == "category":
+            y_final = y_final.astype("category")
 
-#         # decide target analysis type
-#         if dtype_target in ["Int64", "Float64"]:
-#             target_analysis_type = "regression"
-#         elif dtype_target in ["string", "category", "boolean"]:
-#             target_analysis_type = "classification"
+        # decide target analysis type
+        if dtype_target in ["Int64", "Float64"]:
+            target_analysis_type = "regression"
+        elif dtype_target in ["string", "category", "boolean"]:
+            target_analysis_type = "classification"
 
-#         # set expected score
-#         if dtype_target == "no target provided":
-#             if dtype_feature in ["Int64", "Float64"]:
-#                 expected_score = 0.139
-#             elif dtype_feature in ["string", "category"]:
-#                 if type_feature == "array":
-#                     expected_score = 0.444
-#                 else:
-#                     expected_score = 0.5
-#             elif dtype_feature in ["boolean"]:
-#                 if type_feature == "array":
-#                     expected_score = 0.667
-#                 else:
-#                     expected_score = 0.625
-#         else:
-#             if dtype_feature == "boolean":
-#                 if dtype_target == "boolean":
-#                     expected_score = 1
-#                 elif dtype_target in ["string", "category"]:
-#                     # performance is slightly worse for arrays because the nulls are considered a category
-#                     if type_feature == "array" and type_target == "array":
-#                         expected_score = 0.189
-#                     else:
-#                         expected_score = 0.260
-#                 elif dtype_target in ["Int64", "Float64"]:
-#                     expected_score = 0.634
-#             else:
-#                 expected_score = 1
+        # set expected score
+        if dtype_target == "no target provided":
+            if dtype_feature in ["Int64", "Float64"]:
+                expected_score = 0.139
+            elif dtype_feature in ["string", "category"]:
+                if type_feature == "array":
+                    expected_score = 0.444
+                else:
+                    expected_score = 0.5
+            elif dtype_feature in ["boolean"]:
+                if type_feature == "array":
+                    expected_score = 0.667
+                else:
+                    expected_score = 0.625
+        else:
+            if dtype_feature == "boolean":
+                if dtype_target == "boolean":
+                    expected_score = 1
+                elif dtype_target in ["string", "category"]:
+                    # performance is slightly worse for arrays because the nulls are considered a category
+                    if type_feature == "array" and type_target == "array":
+                        expected_score = 0.189
+                    else:
+                        expected_score = 0.260
+                elif dtype_target in ["Int64", "Float64"]:
+                    expected_score = 0.634
+            else:
+                expected_score = 1
 
-#         # initialise object
-#         _, ax = plt.subplots()
-#         sd = SingleDistribution(
-#             feature=(x_final, x_name),
-#             ax=ax,
-#             target=(y_final, y_name)
-#             if type_target == "array" and dtype_target != "no target provided"
-#             else y_final,
-#         )
+        # initialise object
+        _, ax = plt.subplots()
+        sd = SingleDistribution(
+            feature=(x_final, x_name),
+            ax=ax,
+            target=(y_final, y_name)
+            if type_target == "array" and dtype_target != "no target provided"
+            else y_final,
+        )
 
-#         # check printing
-#         captured = sd.__str__()
-#         target_str = (
-#             dtype_target
-#             if dtype_target == "no target provided"
-#             else f"{y_name} ({dtype_target} - {target_analysis_type})"
-#         )
-#         expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: not calculated"
-#         assert expected == captured
+        # check printing
+        captured = sd.__str__()
+        target_str = (
+            dtype_target
+            if dtype_target == "no target provided"
+            else f"{y_name} ({dtype_target} - {target_analysis_type})"
+        )
+        expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: not calculated"
+        assert expected == captured
 
-#         # check missing proportion value
-#         if type_feature == "array" and dtype_feature in ["boolean", "string"]:
-#             expected_missing_proportion = 0
-#         else:
-#             expected_missing_proportion = 1 / 9
-#         assert sd.missing_proportion == expected_missing_proportion
+        # check missing proportion value
+        if type_feature == "array" and dtype_feature in ["boolean", "string"]:
+            expected_missing_proportion = 0
+        else:
+            expected_missing_proportion = 1 / 9
+        assert sd.missing_proportion == expected_missing_proportion
 
-#         # call object
-#         sd()
+        # call object
+        sd()
 
-#         # check score
-#         assert np.round(sd.score, 3) == expected_score
+        # check score
+        assert np.round(sd.score, 3) == expected_score
 
-#         # check printing
-#         captured = sd.__str__()
-#         target_str = (
-#             dtype_target
-#             if dtype_target == "no target provided"
-#             else f"{y_name} ({dtype_target} - {target_analysis_type})"
-#         )
-#         expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: {expected_score:0.3f}"
-#         assert expected == captured
+        # check printing
+        captured = sd.__str__()
+        target_str = (
+            dtype_target
+            if dtype_target == "no target provided"
+            else f"{y_name} ({dtype_target} - {target_analysis_type})"
+        )
+        expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: {expected_score:0.3f}"
+        assert expected == captured
 
-#         plt.close()
+        plt.close()
 
 
 def test_multi_improper_inputs():
@@ -260,7 +260,7 @@ def test_multi_improper_inputs():
 )
 @pytest.mark.parametrize("type_target", ["array", "series"])
 @pytest.mark.parametrize("type_data", ["dataframe"])  # "array", , "series"
-def test_multi_with_target(type_data, type_target, dtype_target):
+def test_multi(type_data, type_target, dtype_target):
     # check config is testable - category is only a dtype for numpy arrays
     config_testable = not (type_target == "array" and dtype_target == "category")
 
