@@ -5,7 +5,7 @@ on:
     types: published
   workflow_dispatch:
 jobs:
-  publish-and-evaluate-coverage:
+  test-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,6 +26,25 @@ jobs:
         with:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
+  full-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - name: Install dependencies for build
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements_dev.txt
+          pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple datavizml
+      - name: Test with pytest
+        run: |
+          pytest
       - name: Publish package to pypi
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
