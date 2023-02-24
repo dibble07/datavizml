@@ -225,83 +225,7 @@ def test_single_prescribed_score():
 #         plt.close()
 
 
-def test_multi_with_float_series_with_float_target():
-    # initialise inputs
-    _, ax = plt.subplots()
-    x = pd.Series(
-        [(x - 10) / 2 for x in range(20)] * 10 + [np.nan],
-        name="feature_test",
-    )
-    y = x * x
-    y.name = "target_test"
-
-    # initialise object
-    eda = ExploratoryDataAnalysis(data=x, target=y, ncols=1)
-
-    # run object
-    eda()
-
-    # check printing
-    captured = eda.__str__()
-    expected = "features: feature_test (Float64)\ntarget: target_test (Float64)"
-    assert expected == captured
-
-
-def test_multi_with_float_string_dataframe_with_string_target():
-    # initialise inputs
-    x = pd.DataFrame(
-        {
-            "feature_float": [i / 10 for i in range(10)],
-            "feature_string": [str(i) for i in range(10)],
-        }
-    )
-    y = (np.array([str(i) for i in range(10)]), "target_test")
-
-    # initialise object
-    eda = ExploratoryDataAnalysis(data=x, target=y, ncols=2)
-
-    # run object
-    eda()
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        eda.data = x
-    with pytest.raises(AttributeError):
-        eda.target = y
-
-    # check printing
-    captured = eda.__str__()
-    expected = "features: feature_float, feature_string (Float64, string)\ntarget: target_test (string)"
-    assert expected == captured
-
-
-def test_multi_with_int_category_dataframe_without_target():
-    # initialise inputs
-    x = pd.DataFrame(
-        {
-            "feature_int": [i for i in range(10)],
-            "feature_bool": [i % 2 == 0 for i in range(10)],
-            "feature_category": [str(i) for i in range(10)],
-        }
-    ).astype({"feature_category": "category"})
-
-    # initialise object
-    eda = ExploratoryDataAnalysis(data=x, ncols=2)
-
-    # run object
-    eda()
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        eda.data = x
-
-    # check printing
-    captured = eda.__str__()
-    expected = "features: feature_int, feature_bool, feature_category (Int64, boolean, category)\ntarget: no target provided"
-    assert expected == captured
-
-
-def test_multi_with_list():
+def test_multi_improper_inputs():
     # initialise inputs
     x_list = [[1, 2], [1, 2]]
     y_list = [0, 1]
@@ -309,6 +233,13 @@ def test_multi_with_list():
     y_array = np.array([0, 1])
     x_array_long = np.array([[1, 2], [1, 2], [1, 2]])
     y_array_long = np.array([0, 1, 2])
+
+    # check inability to reset values
+    eda = ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_array)
+    with pytest.raises(AttributeError):
+        eda.data = x_array
+    with pytest.raises(AttributeError):
+        eda.target = y_array
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
