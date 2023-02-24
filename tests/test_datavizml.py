@@ -12,37 +12,39 @@ def test_single_improper_inputs():
     # initialise inputs
     _, ax = plt.subplots()
     list_ = [0, 1]
-    array = np.array(list)
-    array_long = np.arange(10_000)
-    array_wide = np.array([[0, 1], [0, 1], [0, 1]])
+    x_series = pd.Series(list, name="x")
+    y_series = pd.Series(list, name="y")
+    x_series_long = pd.Series([i for i in range(10_000)], name="x")
+    y_series_long = pd.Series([i for i in range(10_000)], name="y")
+    dataframe = pd.DataFrame([[0, 1], [0, 1], [0, 1]])
 
     # check large values use axis formatter
-    sd = SingleDistribution(feature=array_long, ax=ax, target=array_long)
+    sd = SingleDistribution(feature=x_series_long, ax=ax, target=y_series_long)
     sd()
 
     # check inability to reset values
     with pytest.raises(AttributeError):
-        sd.feature = array
+        sd.feature = x_series
     with pytest.raises(AttributeError):
-        sd.target = array
+        sd.target = y_series
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
-        SingleDistribution(feature=list_, ax=ax, target=array)
+        SingleDistribution(feature=list_, ax=ax, target=y_series)
     with pytest.raises(TypeError):
-        SingleDistribution(feature=array, ax=ax, target=list_)
+        SingleDistribution(feature=x_series, ax=ax, target=list_)
 
-    # check inability to initiate with 2d arrays
-    with pytest.raises(ValueError):
-        SingleDistribution(feature=array, ax=ax, target=array_wide)
-    with pytest.raises(ValueError):
-        SingleDistribution(feature=array_wide, ax=ax, target=array)
+    # check inability to initiate with 2d series
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=x_series, ax=ax, target=dataframe)
+    with pytest.raises(TypeError):
+        SingleDistribution(feature=dataframe, ax=ax, target=y_series)
 
     # check inability to initiate with unevenly sized inputs
     with pytest.raises(ValueError):
-        SingleDistribution(feature=array, ax=ax, target=array_long)
+        SingleDistribution(feature=x_series, ax=ax, target=y_series_long)
     with pytest.raises(ValueError):
-        SingleDistribution(feature=array_long, ax=ax, target=array)
+        SingleDistribution(feature=x_series_long, ax=ax, target=y_series)
 
 
 def test_single_prescribed_score():
@@ -229,29 +231,29 @@ def test_multi_improper_inputs():
     # initialise inputs
     x_list = [[1, 2], [1, 2]]
     y_list = [0, 1]
-    x_array = np.array([[1, 2], [1, 2]])
-    y_array = np.array([0, 1])
-    x_array_long = np.array([[1, 2], [1, 2], [1, 2]])
-    y_array_long = np.array([0, 1, 2])
+    x_dataframe = pd.DataFrame([[1, 2], [1, 2]])
+    y_series = pd.Series([0, 1], name="y")
+    x_dataframe_long = pd.DataFrame([[1, 2], [1, 2], [1, 2]])
+    y_series_long = pd.Series([0, 1, 2], name="y")
 
     # check inability to reset values
-    eda = ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_array)
+    eda = ExploratoryDataAnalysis(data=x_dataframe, ncols=2, target=y_series)
     with pytest.raises(AttributeError):
-        eda.data = x_array
+        eda.data = x_dataframe
     with pytest.raises(AttributeError):
-        eda.target = y_array
+        eda.target = y_series
 
     # check inability to initiate with lists
     with pytest.raises(TypeError):
-        ExploratoryDataAnalysis(data=x_list, ncols=2, target=y_array)
+        ExploratoryDataAnalysis(data=x_list, ncols=2, target=y_series)
     with pytest.raises(TypeError):
-        ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_list)
+        ExploratoryDataAnalysis(data=x_dataframe, ncols=2, target=y_list)
 
     # check inability to initiate with unevenly sized inputs
     with pytest.raises(ValueError):
-        ExploratoryDataAnalysis(data=x_array, ncols=2, target=y_array_long)
+        ExploratoryDataAnalysis(data=x_dataframe, ncols=2, target=y_series_long)
     with pytest.raises(ValueError):
-        ExploratoryDataAnalysis(data=x_array_long, ncols=2, target=y_array)
+        ExploratoryDataAnalysis(data=x_dataframe_long, ncols=2, target=y_series)
 
 
 @pytest.mark.parametrize(
