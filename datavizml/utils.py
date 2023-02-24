@@ -1,19 +1,12 @@
-import numpy as np
 import pandas as pd
 
 
 # convert to series
-def to_series(input, name):
-    """A method to convert inputs into a pandas series"""
+def to_series(input):
+    """A method to check inputs are a pandas series"""
     # convert array to series
     if isinstance(input, pd.Series):
         return input
-    elif isinstance(input, np.ndarray):
-        output = np.squeeze(input)
-        ndim = output.ndim
-        if ndim > 1:
-            raise ValueError(f"Input has {ndim} dimensions but only 1 is allowed")
-        return pd.Series(output, name=name)
     else:
         raise TypeError(
             f"Input is of {input.__class__.__name__} type which is not valid"
@@ -28,8 +21,6 @@ def to_frame(input):
         return input
     elif isinstance(input, pd.Series):
         return input.to_frame()
-    elif isinstance(input, np.ndarray):
-        return pd.DataFrame(np.squeeze(input))
     else:
         raise TypeError(
             f"Input is of {input.__class__.__name__} type which is not valid"
