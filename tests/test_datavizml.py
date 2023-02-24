@@ -329,6 +329,9 @@ def test_multi(type_data, type_target, dtype_target):
             else y_final,
         )
 
+        # check indexing
+        assert isinstance(eda[0], SingleDistribution)
+
         # check printing
         captured = eda.__str__()
         data_str = (
