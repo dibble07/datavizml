@@ -31,3 +31,6 @@ dynamic = ["version"]
 "Changelog" = "https://github.com/dibble07/datavizml/releases"
 
 [tool.setuptools_scm]
+
+[tool.setuptools.packages.find]
+include = ["datavizml*"]

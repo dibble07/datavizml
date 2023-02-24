@@ -1,6 +1,5 @@
 from matplotlib import pyplot as plt
-import singledistribution as sd
-import utils
+from datavizml import singledistribution as sd, utils
 
 
 class ExploratoryDataAnalysis:

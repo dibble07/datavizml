@@ -5,7 +5,7 @@ import pandas as pd
 import ppscore as pps
 import scipy
 from statsmodels.stats.proportion import proportion_confint
-import utils
+from datavizml import utils
 
 
 class SingleDistribution:
