@@ -259,7 +259,7 @@ def test_multi_improper_inputs():
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
 )
 @pytest.mark.parametrize("type_target", ["array", "series"])
-@pytest.mark.parametrize("type_data", ["dataframe"])  # "array", , "series"
+@pytest.mark.parametrize("type_data", ["dataframe", "series"])  # "array",
 def test_multi(type_data, type_target, dtype_target):
     # check config is testable - category is only a dtype for numpy arrays
     config_testable = not (type_target == "array" and dtype_target == "category")
@@ -298,12 +298,21 @@ def test_multi(type_data, type_target, dtype_target):
             y = None
 
         # convert x values to inputs
-        x_names = [f"x_{i}".capitalize() for i in x.keys()]
-        if type_data == "array":
-            x_final = np.array(list(x.values()))
-        elif type_data == "dataframe":
-            x_final = pd.DataFrame(x)
-            x_final.columns = x_names
+        x_names_raw = [f"x_{i}".capitalize() for i in x.keys()]
+        # if type_data == "array":
+        #     x_final = np.array(list(x.values()))
+        # el
+        if type_data == "dataframe":
+            x_final_list = [pd.DataFrame(x)]
+            x_final_list[0].columns = x_names_raw
+            x_names_list = [x_names_raw]
+            x_types_list = [x.keys()]
+        elif type_data == "series":
+            x_final_list = [
+                pd.Series(val, name=name) for val, name in zip(x.values(), x_names_raw)
+            ]
+            x_names_list = [[i] for i in x_names_raw]
+            x_types_list = [[i] for i in x.keys()]
 
         # convert y values to inputs
         y_name = f"y_{dtype_target}".capitalize()
@@ -315,38 +324,49 @@ def test_multi(type_data, type_target, dtype_target):
             y_final = pd.Series(y, name=y_name)
 
         # pandas specific dtype conversion
-        if type_data != "array":
-            x_final = x_final.astype({"x_category".capitalize(): "category"})
+        if type_data == "dataframe":
+            x_final_list[0] = x_final_list[0].astype(
+                {name.capitalize(): type_ for type_, name in zip(x.keys(), x_names_raw)}
+            )
+        elif type_data == "series":
+            x_final_list = [i.astype(type_) for type_, i in zip(x.keys(), x_final_list)]
         if dtype_target == "category":
             y_final = y_final.astype("category")
 
-        # initialise object
-        eda = ExploratoryDataAnalysis(
-            data=(x_final, x_names) if type_data == "array" else x_final,
-            ncols=2,
-            target=(y_final, y_name)
-            if type_target == "array" and dtype_target != "no target provided"
-            else y_final,
-        )
+        # initialise objects
+        eda_list = []
+        for x_final, x_names in zip(x_final_list, x_names_list):
+            eda_list.append(
+                ExploratoryDataAnalysis(
+                    data=(x_final, x_names) if type_data == "array" else x_final,
+                    ncols=2,
+                    target=(y_final, y_name)
+                    if type_target == "array" and dtype_target != "no target provided"
+                    else y_final,
+                )
+            )
 
-        # check indexing
-        assert isinstance(eda[0], SingleDistribution)
+        # loop over all eda objects created
+        for eda, x_names, x_types in zip(eda_list, x_names_list, x_types_list):
+            # check indexing
+            assert isinstance(eda[0], SingleDistribution)
 
-        # check printing
-        captured = eda.__str__()
-        data_str = (
-            ", ".join(x_names),
-            ", ".join(sorted(x.keys())),
-        )
-        target_str = (
-            dtype_target
-            if dtype_target == "no target provided"
-            else f"{y_name} ({dtype_target})"
-        )
-        expected = f"features: {data_str[0]} ({data_str[1]})\ntarget: {target_str}"
-        assert expected == captured
+            # check printing
+            captured = eda.__str__()
+            data_str = (
+                ", ".join(x_names),
+                ", ".join(sorted(x_types)),
+            )
+            target_str = (
+                dtype_target
+                if dtype_target == "no target provided"
+                else f"{y_name} ({dtype_target})"
+            )
+            expected = f"features: {data_str[0]} ({data_str[1]})\ntarget: {target_str}"
+            assert expected == captured
 
-        # call object
-        eda()
+            # call object
+            eda()
 
-        plt.close()
+            # close figure to save memory
+            plt.close(eda.fig)
