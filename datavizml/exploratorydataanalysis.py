@@ -14,7 +14,7 @@ class ExploratoryDataAnalysis:
     :type ncols: float, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
-    :param prediction_matrix_full: full or reduced PPS matrix
+    :param prediction_matrix_full: full or reduced prediction matrix
     :type prediction_matrix_full: boolean, optional
     :param figure_width: width of figure
     :type figure_width: int, optional
@@ -65,8 +65,8 @@ class ExploratoryDataAnalysis:
         # initialise figure and axes
         self.init_figure()
 
-        # calculate PPS
-        self.calculate_pps()
+        # calculate prediction matrix
+        self.calculate_prediction_matrix()
 
         # initialise figure and axes
         self.init_single_distributions()
@@ -131,9 +131,9 @@ class ExploratoryDataAnalysis:
         self.fig = fig
         self.ax = ax
 
-    # calculate PPS
-    def calculate_pps(self):
-        "Calculate PPS values for specified combinations of features/targets"
+    # calculate prediction matrix
+    def calculate_prediction_matrix(self):
+        "Calculate prediction matrix for specified combinations of features/targets"
         # combine feature and target
         if self.has_target:
             df = pd.concat([self.data, self.target], axis=1)
@@ -142,7 +142,7 @@ class ExploratoryDataAnalysis:
 
         # calculate full matrix
         if self.__prediction_matrix_full:
-            self.__pps_matrix = pps.matrix(
+            self.__prediction_matrix = pps.matrix(
                 df=df,
                 sample=None,
                 invalid_score=np.nan,
@@ -150,7 +150,7 @@ class ExploratoryDataAnalysis:
         else:
             # calculate reduced matrix
             if self.has_target:
-                self.__pps_matrix = pps.predictors(
+                self.__prediction_matrix = pps.predictors(
                     df=df,
                     y=self.target.name,
                     sorted=False,
@@ -158,7 +158,7 @@ class ExploratoryDataAnalysis:
                     invalid_score=np.nan,
                 )
             else:
-                self.__pps_matrix = None
+                self.__prediction_matrix = None
 
     # initialise distribution plot
     def init_single_distributions(self):
@@ -218,8 +218,8 @@ class ExploratoryDataAnalysis:
             # convert to series and set
             self.__target = utils.to_series(target)
 
-    # pps matrix getter
+    # prediction matrix matrix getter
     @property
-    def pps_matrix(self):
-        """The PPS matrix data"""
-        return self.__pps_matrix
+    def prediction_matrix(self):
+        """The prediction matrix matrix data"""
+        return self.__prediction_matrix
