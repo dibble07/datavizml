@@ -56,19 +56,19 @@ def test_single_prescribed_score():
     )
     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
 
-    # check inability to initiate with score value as string
+    # check inability to initiate with target score value as string
     with pytest.raises(TypeError):
-        SingleDistribution(feature=x, ax=ax, target=y, score="0.1")
+        SingleDistribution(feature=x, ax=ax, target=y, target_score="0.1")
 
     # initialise object
-    sd = SingleDistribution(feature=x, ax=ax, target=y, score=0.1)
+    sd = SingleDistribution(feature=x, ax=ax, target=y, target_score=0.1)
 
     # check inability to reset values
     with pytest.raises(AttributeError):
-        sd.score = 0.2
+        sd.target_score = 0.2
 
-    # check score value
-    assert sd.score == 0.1
+    # check target score value
+    assert sd.target_score == 0.1
 
 
 @pytest.mark.parametrize(
@@ -133,24 +133,24 @@ def test_single(dtype_feature, dtype_target):
     elif dtype_target in ["string", "category", "boolean"]:
         target_analysis_type = "classification"
 
-    # set expected score
-    if dtype_target == "no target provided":
-        if dtype_feature in ["Int64", "Float64"]:
-            expected_score = 0.139
-        elif dtype_feature in ["string", "category"]:
-            expected_score = 0.5
-        elif dtype_feature in ["boolean"]:
-            expected_score = 0.625
+    # set expected feature score
+    if dtype_feature in ["Int64", "Float64"]:
+        expected_feature_score = 0.139
+    elif dtype_feature in ["string", "category"]:
+        expected_feature_score = 0.5
+    elif dtype_feature in ["boolean"]:
+        expected_feature_score = 0.625
+
+    # set expected feature score
+    if dtype_feature == "boolean":
+        if dtype_target == "boolean":
+            expected_target_score = 1
+        elif dtype_target in ["string", "category"]:
+            expected_target_score = 0.260
+        elif dtype_target in ["Int64", "Float64"]:
+            expected_target_score = 0.634
     else:
-        if dtype_feature == "boolean":
-            if dtype_target == "boolean":
-                expected_score = 1
-            elif dtype_target in ["string", "category"]:
-                expected_score = 0.260
-            elif dtype_target in ["Int64", "Float64"]:
-                expected_score = 0.634
-        else:
-            expected_score = 1
+        expected_target_score = 1
 
     # initialise object
     _, ax = plt.subplots()
@@ -167,27 +167,38 @@ def test_single(dtype_feature, dtype_target):
         if dtype_target == "no target provided"
         else f"{y_name} ({dtype_target} - {target_analysis_type})"
     )
-    expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: not calculated"
+    expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}"
     assert expected == captured
-
-    # check missing proportion value
-    assert sd.missing_proportion == 1 / 9
 
     # call object
     sd()
 
-    # check score
-    assert np.round(sd.score, 3) == expected_score
+    # extract values using summary dictionary
+    summary = sd.to_dict()
 
-    # check printing
-    captured = sd.__str__()
-    target_str = (
-        dtype_target
-        if dtype_target == "no target provided"
-        else f"{y_name} ({dtype_target} - {target_analysis_type})"
+    # check feature parameters
+    assert summary["feature_name"] == x_name
+    assert summary["feature_dtype"] == dtype_feature
+    assert np.round(summary["feature_score"], 3) == expected_feature_score
+    assert (
+        summary["feature_score_type"] == "Inter-quartile skew"
+        if sd.feature_is_numeric and not sd.feature_is_bool
+        else "Categorical skew"
     )
-    expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: {expected_score:0.3f}"
-    assert expected == captured
+    assert summary["feature_nunique"] == 6 if dtype_feature != "boolean" else 3
+    assert summary["feature_missing_proportion"] == 1 / 9
+
+    # check target parameters
+    if sd.has_target:
+        assert summary["target_name"] == y_name
+        assert summary["target_dtype"] == dtype_target
+        assert np.round(summary["target_score"], 3) == expected_target_score
+        assert summary["target_score_type"] == "PPS"
+    else:
+        assert summary["target_name"] == None
+        assert summary["target_dtype"] == None
+        assert np.isnan(summary["target_score"])
+        assert summary["target_score_type"] == "N/A"
 
     plt.close()
 
@@ -317,6 +328,26 @@ def test_multi(type_data, dtype_target):
 
         # call object
         eda()
+
+        # check summary dataframe - structure only as values tested in singledistribution
+        summary = eda.summary()
+        assert isinstance(summary, pd.DataFrame)
+        assert (
+            summary.columns
+            == [
+                "feature_name",
+                "feature_dtype",
+                "feature_score",
+                "feature_score_type",
+                "feature_nunique",
+                "feature_missing_proportion",
+                "target_name",
+                "target_dtype",
+                "target_score",
+                "target_score_type",
+            ]
+        ).all()
+        assert summary.shape[0] == len(x_names)
 
         # close figure to save memory
         plt.close(eda.fig)

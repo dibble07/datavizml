@@ -1,5 +1,6 @@
-from matplotlib import pyplot as plt
 from datavizml import singledistribution as sd, utils
+from matplotlib import pyplot as plt
+import pandas as pd
 
 
 class ExploratoryDataAnalysis:
@@ -130,6 +131,11 @@ class ExploratoryDataAnalysis:
                     ax=ax,
                 )
             )
+
+    # create summary dataframe
+    def summary(self):
+        data = [sd.to_dict() for sd in self.single_distributions]
+        return pd.DataFrame(data=data)
 
     # data getter
     @property

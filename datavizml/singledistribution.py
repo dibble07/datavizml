@@ -17,8 +17,8 @@ class SingleDistribution:
     :type ax: matplotlib Axes
     :param target: Target to be predicted
     :type target: pandas Series, optional
-    :param score: Precomputed score to avoid recalculation
-    :type score: float, optional
+    :param target_score: Precomputed score to avoid recalculation
+    :type target_score: float, optional
     :param binning_threshold: Maximum number of distinct values in the column before binning, defaults to 12
     :type binning_threshold: int, optional
     """
@@ -28,7 +28,9 @@ class SingleDistribution:
     COLOUR_FEATURE_DEFAULT = "grey"  # colour used for feature
     COLOURMAP_TARGET_DEFAULT = "tab10"  # colour map used for target
 
-    def __init__(self, feature, ax, target=None, score=None, binning_threshold=None):
+    def __init__(
+        self, feature, ax, target=None, target_score=None, binning_threshold=None
+    ):
         """Constructor method"""
         # input variables
         self.ax_feature = ax
@@ -36,8 +38,8 @@ class SingleDistribution:
         self.has_target = target is not None
         if self.has_target:
             self.target = target
-        if score is not None:
-            self.score = score
+        if target_score is not None:
+            self.target_score = target_score
         self.binning_threshold = (
             binning_threshold
             if binning_threshold
@@ -69,6 +71,7 @@ class SingleDistribution:
                 self.target_type = "classification"
 
         # supplementary/reusable variables
+        self.feature_nunique = self.feature.nunique(dropna=False)
         missing_proportion = self.feature.isna().value_counts(normalize=True)
         self.__missing_proportion = (
             missing_proportion[True] if True in missing_proportion.index else 0
@@ -79,7 +82,7 @@ class SingleDistribution:
     def __str__(self):
         """Returns a string representation of the instance
 
-        :return: A string containing: feature name and data type; target name and data type; and relationship score if available
+        :return: A string containing the feature and target name and their data types
         :rtype: str
         """
 
@@ -89,14 +92,12 @@ class SingleDistribution:
             if self.has_target
             else "no target provided"
         )
-        score_val = f"{self.score:0.3f}" if hasattr(self, "score") else "not calculated"
 
         # attribute related strings
         feature_str = f"feature: {self.feature.name} ({self.feature_dtype})"
         target_str = f"target: {target_val}"
-        score_str = f"score: {score_val}"
 
-        return ", ".join([feature_str, target_str, score_str])
+        return ", ".join([feature_str, target_str])
 
     def __call__(
         self,
@@ -117,9 +118,13 @@ class SingleDistribution:
         # load colourmap
         self.__cmap = matplotlib.colormaps[colourmap_target]
 
-        # calculate score
-        if not hasattr(self, "score"):
-            self.calculate_score()
+        # calculate target score
+        if not hasattr(self, "target_score"):
+            self.calculate_target_score()
+
+        # calculate feature score
+        if not hasattr(self, "feature_score"):
+            self.calculate_feature_score()
 
         # summarise feature
         if not hasattr(self, "feature_summary"):
@@ -216,42 +221,42 @@ class SingleDistribution:
                     self.ax_target.legend()
 
         # add title
+        if self.has_target:
+            score_type, score = self.__target_score_type, self.target_score
+        else:
+            score_type, score = self.__feature_score_type, self.feature_score
         self.ax_feature.set_title(
-            f"{self.__score_type} = {self.score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
+            f"{score_type} = {score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
         )
 
-    def calculate_score(self):
-        """Calculate the score for the feature based on its predictive power or skewness.
+    def calculate_feature_score(self):
+        """Calculate the score for the feature based on its skewness"""
+        if self.feature_is_numeric and not self.feature_is_bool:
+            # calculate skew of median towards quartiles
+            lower, median, upper = np.quantile(self.feature.dropna(), [0.25, 0.5, 0.75])
+            middle = (upper + lower) / 2
+            range_ = abs(upper - lower)
+            self.feature_score = abs((median - middle)) / range_ / 2
+            self.__feature_score_type = "Inter-quartile skew"
+        else:
+            # calculate skew towards the mode
+            self.feature_score = self.feature.value_counts(normalize=True).max()
+            self.__feature_score_type = "Categorical skew"
 
-        If a target has been specified for the feature, the score is calculated based on the predictive power score
-        (PPS). Otherwise, the score is calculated based on the skewness of the median towards quartiles (for
-        numerical features) or the categorical skew (for categorical features).
-        """
-
+    def calculate_target_score(self):
+        """Calculate the score for the feature based on its predictive power"""
         if self.has_target:
-            # calculate predictive power score
-            self.score = pps.score(
+            self.target_score = pps.score(
                 df=pd.concat([self.feature, self.target], axis=1),
                 x=self.feature.name,
                 y=self.target.name,
                 sample=None,
                 invalid_score=np.nan,
             )["ppscore"]
-            self.__score_type = "PPS"
-
+            self.__target_score_type = "PPS"
         else:
-            if self.feature_is_numeric and not self.feature_is_bool:
-                # calculate skew of median towards quartiles
-                lower, median, upper = np.quantile(
-                    self.feature.dropna(), [0.25, 0.5, 0.75]
-                )
-                middle = (upper + lower) / 2
-                range_ = abs(upper - lower)
-                self.score = abs((median - middle)) / range_ / 2
-                self.__score_type = "Inter-quartile skew"
-            else:
-                self.score = self.feature.value_counts(normalize=True).max()
-                self.__score_type = "Categorical skew"
+            self.target_score = np.nan
+            self.__target_score_type = "N/A"
 
     def summarise_feature(self):
         """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
@@ -262,7 +267,7 @@ class SingleDistribution:
             all_data = self.feature.to_frame()
 
         # bin target variable if there are too many distinct values
-        if self.feature.nunique() > self.binning_threshold and self.feature_is_numeric:
+        if self.feature_nunique > self.binning_threshold and self.feature_is_numeric:
             bin_boundaries = np.linspace(
                 self.feature.min(), self.feature.max(), self.binning_threshold + 1
             )
@@ -300,6 +305,22 @@ class SingleDistribution:
                 {True: "True", False: "False"}
             )
 
+    def to_dict(self):
+        "Summarise as a dictionary"
+        summary = {
+            "feature_name": self.feature.name,
+            "feature_dtype": self.feature_dtype,
+            "feature_score": self.feature_score,
+            "feature_score_type": self.__feature_score_type,
+            "feature_nunique": self.feature_nunique,
+            "feature_missing_proportion": self.missing_proportion,
+            "target_name": self.target.name if self.has_target else None,
+            "target_dtype": self.target_dtype if self.has_target else None,
+            "target_score": self.target_score,
+            "target_score_type": self.__target_score_type,
+        }
+        return summary
+
     # feature getter
     @property
     def feature(self):
@@ -334,26 +355,48 @@ class SingleDistribution:
             # convert to series and set
             self.__target = utils.to_series(target)
 
-    # score getter
+    # target score getter
     @property
-    def score(self):
-        """The score value"""
-        return self.__score
+    def target_score(self):
+        """The score value of the relationship to target"""
+        return self.__target_score
 
-    # score setter
-    @score.setter
-    def score(self, score):
-        if hasattr(self, "score"):
+    # target_score setter
+    @target_score.setter
+    def target_score(self, target_score):
+        if hasattr(self, "target_score"):
             # do not allow changing of data
             raise AttributeError("This attribute has already been set")
 
         else:
             # only accept numerical values
-            if isinstance(score, (int, float)):
-                self.__score = score
+            if isinstance(target_score, (int, float)):
+                self.__target_score = target_score
             else:
                 raise TypeError(
-                    f"score is of {score.__class__.__name__} type which is not valid"
+                    f"target_score is of {target_score.__class__.__name__} type which is not valid"
+                )
+
+    # feature score getter
+    @property
+    def feature_score(self):
+        """The score value of the feature distribution"""
+        return self.__feature_score
+
+    # feature_score setter
+    @feature_score.setter
+    def feature_score(self, feature_score):
+        if hasattr(self, "feature_score"):
+            # do not allow changing of data
+            raise AttributeError("This attribute has already been set")
+
+        else:
+            # only accept numerical values
+            if isinstance(feature_score, (int, float)):
+                self.__feature_score = feature_score
+            else:
+                raise TypeError(
+                    f"feature_score is of {feature_score.__class__.__name__} type which is not valid"
                 )
 
     # missing proportion getter
