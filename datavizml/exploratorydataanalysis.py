@@ -134,6 +134,11 @@ class ExploratoryDataAnalysis:
 
     # create summary dataframe
     def summary(self):
+        """Summarise analysis
+
+        :return: A dataframe summarising each of the features and their relationship to the target
+        :rtype: pd.DataFrame
+        """
         data = [sd.to_dict() for sd in self.single_distributions]
         return pd.DataFrame(data=data)
 
