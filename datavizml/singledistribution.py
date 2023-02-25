@@ -71,6 +71,7 @@ class SingleDistribution:
                 self.target_type = "classification"
 
         # supplementary/reusable variables
+        self.feature_nunique = self.feature.nunique(dropna=False)
         missing_proportion = self.feature.isna().value_counts(normalize=True)
         self.__missing_proportion = (
             missing_proportion[True] if True in missing_proportion.index else 0
@@ -266,7 +267,7 @@ class SingleDistribution:
             all_data = self.feature.to_frame()
 
         # bin target variable if there are too many distinct values
-        if self.feature.nunique() > self.binning_threshold and self.feature_is_numeric:
+        if self.feature_nunique > self.binning_threshold and self.feature_is_numeric:
             bin_boundaries = np.linspace(
                 self.feature.min(), self.feature.max(), self.binning_threshold + 1
             )
@@ -303,6 +304,22 @@ class SingleDistribution:
             self.__feature_summary.index = self.__feature_summary.index.map(
                 {True: "True", False: "False"}
             )
+
+    def to_dict(self):
+        "Summarise as a dictionary"
+        summary = {
+            "feature_name": self.feature.name,
+            "feature_dtype": self.feature_dtype,
+            "feature_score": self.feature_score,
+            "feature_score_type": self.__feature_score_type,
+            "feature_nunique": self.feature_nunique,
+            "feature_missing_proportion": self.missing_proportion,
+            "target_name": self.target.name if self.has_target else None,
+            "target_dtype": self.target_dtype if self.has_target else None,
+            "target_score": self.target_score,
+            "target_score_type": self.__target_score_type,
+        }
+        return summary
 
     # feature getter
     @property

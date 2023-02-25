@@ -170,18 +170,35 @@ def test_single(dtype_feature, dtype_target):
     expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}"
     assert expected == captured
 
-    # check missing proportion value
-    assert sd.missing_proportion == 1 / 9
-
     # call object
     sd()
 
-    # check scores
-    assert np.round(sd.feature_score, 3) == expected_feature_score
+    # extract values using summary dictionary
+    summary = sd.to_dict()
+
+    # check feature parameters
+    assert summary["feature_name"] == x_name
+    assert summary["feature_dtype"] == dtype_feature
+    assert np.round(summary["feature_score"], 3) == expected_feature_score
+    assert (
+        summary["feature_score_type"] == "Inter-quartile skew"
+        if sd.feature_is_numeric and not sd.feature_is_bool
+        else "Categorical skew"
+    )
+    assert summary["feature_nunique"] == 6 if dtype_feature != "boolean" else 3
+    assert summary["feature_missing_proportion"] == 1 / 9
+
+    # check target parameters
     if sd.has_target:
-        assert np.round(sd.target_score, 3) == expected_target_score
+        assert summary["target_name"] == y_name
+        assert summary["target_dtype"] == dtype_target
+        assert np.round(summary["target_score"], 3) == expected_target_score
+        assert summary["target_score_type"] == "PPS"
     else:
-        assert np.isnan(sd.target_score)
+        assert summary["target_name"] == None
+        assert summary["target_dtype"] == None
+        assert np.isnan(summary["target_score"])
+        assert summary["target_score_type"] == "N/A"
 
     plt.close()
 
