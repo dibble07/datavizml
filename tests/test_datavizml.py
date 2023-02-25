@@ -56,19 +56,19 @@ def test_single_prescribed_score():
     )
     y = pd.Series([0, 0, 1, 1] * 4, name="target_test")
 
-    # check inability to initiate with score value as string
+    # check inability to initiate with target score value as string
     with pytest.raises(TypeError):
-        SingleDistribution(feature=x, ax=ax, target=y, score="0.1")
+        SingleDistribution(feature=x, ax=ax, target=y, target_score="0.1")
 
     # initialise object
-    sd = SingleDistribution(feature=x, ax=ax, target=y, score=0.1)
+    sd = SingleDistribution(feature=x, ax=ax, target=y, target_score=0.1)
 
     # check inability to reset values
     with pytest.raises(AttributeError):
-        sd.score = 0.2
+        sd.target_score = 0.2
 
-    # check score value
-    assert sd.score == 0.1
+    # check target score value
+    assert sd.target_score == 0.1
 
 
 @pytest.mark.parametrize(
@@ -133,24 +133,24 @@ def test_single(dtype_feature, dtype_target):
     elif dtype_target in ["string", "category", "boolean"]:
         target_analysis_type = "classification"
 
-    # set expected score
-    if dtype_target == "no target provided":
-        if dtype_feature in ["Int64", "Float64"]:
-            expected_score = 0.139
-        elif dtype_feature in ["string", "category"]:
-            expected_score = 0.5
-        elif dtype_feature in ["boolean"]:
-            expected_score = 0.625
+    # set expected feature score
+    if dtype_feature in ["Int64", "Float64"]:
+        expected_feature_score = 0.139
+    elif dtype_feature in ["string", "category"]:
+        expected_feature_score = 0.5
+    elif dtype_feature in ["boolean"]:
+        expected_feature_score = 0.625
+
+    # set expected feature score
+    if dtype_feature == "boolean":
+        if dtype_target == "boolean":
+            expected_target_score = 1
+        elif dtype_target in ["string", "category"]:
+            expected_target_score = 0.260
+        elif dtype_target in ["Int64", "Float64"]:
+            expected_target_score = 0.634
     else:
-        if dtype_feature == "boolean":
-            if dtype_target == "boolean":
-                expected_score = 1
-            elif dtype_target in ["string", "category"]:
-                expected_score = 0.260
-            elif dtype_target in ["Int64", "Float64"]:
-                expected_score = 0.634
-        else:
-            expected_score = 1
+        expected_target_score = 1
 
     # initialise object
     _, ax = plt.subplots()
@@ -167,7 +167,7 @@ def test_single(dtype_feature, dtype_target):
         if dtype_target == "no target provided"
         else f"{y_name} ({dtype_target} - {target_analysis_type})"
     )
-    expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: not calculated"
+    expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}"
     assert expected == captured
 
     # check missing proportion value
@@ -176,18 +176,12 @@ def test_single(dtype_feature, dtype_target):
     # call object
     sd()
 
-    # check score
-    assert np.round(sd.score, 3) == expected_score
-
-    # check printing
-    captured = sd.__str__()
-    target_str = (
-        dtype_target
-        if dtype_target == "no target provided"
-        else f"{y_name} ({dtype_target} - {target_analysis_type})"
-    )
-    expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}, score: {expected_score:0.3f}"
-    assert expected == captured
+    # check scores
+    assert np.round(sd.feature_score, 3) == expected_feature_score
+    if sd.has_target:
+        assert np.round(sd.target_score, 3) == expected_target_score
+    else:
+        assert np.isnan(sd.target_score)
 
     plt.close()
 
