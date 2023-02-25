@@ -38,6 +38,10 @@ class SingleDistribution:
         self.has_target = target is not None
         if self.has_target:
             self.target = target
+            if self.feature.name == self.target.name:
+                # clear target if the same as feature
+                del self.__target
+                self.has_target = False
         if target_score is not None:
             self.target_score = target_score
         self.binning_threshold = (
