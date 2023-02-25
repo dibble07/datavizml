@@ -12,11 +12,16 @@ def test_single_improper_inputs():
     # initialise inputs
     _, ax = plt.subplots()
     list_ = [0, 1]
-    x_series = pd.Series(list, name="x")
-    y_series = pd.Series(list, name="y")
+    x_series = pd.Series(list_, name="x")
+    y_series = pd.Series(list_, name="y")
     x_series_long = pd.Series([i for i in range(10_000)], name="x")
     y_series_long = pd.Series([i for i in range(10_000)], name="y")
     dataframe = pd.DataFrame([[0, 1], [0, 1], [0, 1]])
+
+    # check target vs target
+    sd = SingleDistribution(feature=y_series, ax=ax, target=y_series)
+    sd()
+    assert np.isnan(sd.target_score)
 
     # check large values use axis formatter
     sd = SingleDistribution(feature=x_series_long, ax=ax, target=y_series_long)
