@@ -1,6 +1,8 @@
 from datavizml import singledistribution as sd, utils
 from matplotlib import pyplot as plt
+import numpy as np
 import pandas as pd
+import ppscore as pps
 
 
 class ExploratoryDataAnalysis:
@@ -8,10 +10,16 @@ class ExploratoryDataAnalysis:
 
     :param data: Features to be analysed
     :type data: pandas Series of pandas DataFrame
-    :param target: Target to be predicted
-    :type target: pandas Series, optional
     :param ncols: Number of columns to use in figure
     :type ncols: float, optional
+    :param target: Target to be predicted
+    :type target: pandas Series, optional
+    :param prediction_matrix_full: full or reduced PPS matrix
+    :type prediction_matrix_full: boolean, optional
+    :param figure_width: width of figure
+    :type figure_width: int, optional
+    :param axes_height: height of axes
+    :type axes_height: int, optional
     """
 
     FIGURE_WIDTH = 18  # width of figure
@@ -22,6 +30,7 @@ class ExploratoryDataAnalysis:
         data,
         ncols,
         target=None,
+        prediction_matrix_full=False,
         figure_width=FIGURE_WIDTH,
         axes_height=AXES_HEIGHT,
     ):
@@ -32,6 +41,7 @@ class ExploratoryDataAnalysis:
         if self.has_target:
             self.target = target
         self.__ncols = ncols
+        self.__prediction_matrix_full = prediction_matrix_full
         self.__figure_width = figure_width
         self.__axes_height = axes_height
 
@@ -54,6 +64,9 @@ class ExploratoryDataAnalysis:
 
         # initialise figure and axes
         self.init_figure()
+
+        # calculate PPS
+        self.calculate_pps()
 
         # initialise figure and axes
         self.init_single_distributions()
@@ -118,6 +131,35 @@ class ExploratoryDataAnalysis:
         self.fig = fig
         self.ax = ax
 
+    # calculate PPS
+    def calculate_pps(self):
+        "Calculate PPS values for specified combinations of features/targets"
+        # combine feature and target
+        if self.has_target:
+            df = pd.concat([self.data, self.target], axis=1)
+        else:
+            df = self.data
+
+        # calculate full matrix
+        if self.__prediction_matrix_full:
+            self.__pps_matrix = pps.matrix(
+                df=df,
+                sample=None,
+                invalid_score=np.nan,
+            )
+        else:
+            # calculate reduced matrix
+            if self.has_target:
+                self.__pps_matrix = pps.predictors(
+                    df=df,
+                    y=self.target.name,
+                    sorted=False,
+                    sample=None,
+                    invalid_score=np.nan,
+                )
+            else:
+                self.__pps_matrix = None
+
     # initialise distribution plot
     def init_single_distributions(self):
         """Initialise a single distribution object for each feature"""
@@ -175,3 +217,9 @@ class ExploratoryDataAnalysis:
         else:
             # convert to series and set
             self.__target = utils.to_series(target)
+
+    # pps matrix getter
+    @property
+    def pps_matrix(self):
+        """The PPS matrix data"""
+        return self.__pps_matrix
