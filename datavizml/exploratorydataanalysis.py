@@ -85,22 +85,12 @@ class ExploratoryDataAnalysis:
         """Get the distribution plot at the given index
 
         :param ind: The index of the distribution plot to retrieve
-        :type ind: int or str
+        :type ind: int
 
         :return: The SingleDistribution object at the given index, or None if the index is out of range
         :rtype: SingleDistribution or None
         """
-        if isinstance(ind, int):
-            if ind < len(self.single_distributions):
-                output = list(self.single_distributions.values())[ind]
-            else:
-                raise IndexError(f"Index {ind} is out of range")
-        else:
-            if ind in self.single_distributions.keys():
-                output = self.single_distributions[ind]
-            else:
-                raise IndexError(f"Index {ind} is not in available values")
-        return output
+        return self.single_distributions[ind]
 
     def __call__(self):
         """Generates and decorates the plots for each feature
@@ -131,12 +121,14 @@ class ExploratoryDataAnalysis:
     def init_single_distributions(self):
         """Initialise a single distribution object for each feature"""
         # initialise all single distribution objects
-        self.single_distributions = {}
-        for (name, feature), ax in zip(self.data.items(), self.ax.flatten()):
-            self.single_distributions[name] = sd.SingleDistribution(
-                feature=feature,
-                target=self.target if self.has_target else None,
-                ax=ax,
+        self.single_distributions = []
+        for (_, feature), ax in zip(self.data.items(), self.ax.flatten()):
+            self.single_distributions.append(
+                sd.SingleDistribution(
+                    feature=feature,
+                    target=self.target if self.has_target else None,
+                    ax=ax,
+                )
             )
 
     # data getter

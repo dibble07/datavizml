@@ -311,9 +311,6 @@ def test_multi(type_data, dtype_target):
     for eda, x_names, x_types in zip(eda_list, x_names_list, x_types_list):
         # check indexing
         assert isinstance(eda[0], SingleDistribution)
-        assert isinstance(eda[x_names[0]], SingleDistribution)
-        with pytest.raises(IndexError):
-            eda["a value not in the index"]
 
         # check printing
         captured = eda.__str__()
