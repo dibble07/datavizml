@@ -329,5 +329,25 @@ def test_multi(type_data, dtype_target):
         # call object
         eda()
 
+        # check summary dataframe - structure only as values tested in singledistribution
+        summary = eda.summary()
+        assert isinstance(summary, pd.DataFrame)
+        assert (
+            summary.columns
+            == [
+                "feature_name",
+                "feature_dtype",
+                "feature_score",
+                "feature_score_type",
+                "feature_nunique",
+                "feature_missing_proportion",
+                "target_name",
+                "target_dtype",
+                "target_score",
+                "target_score_type",
+            ]
+        ).all()
+        assert summary.shape[0] == len(x_names)
+
         # close figure to save memory
         plt.close(eda.fig)
