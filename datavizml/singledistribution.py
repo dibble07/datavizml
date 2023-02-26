@@ -40,6 +40,7 @@ class SingleDistribution:
             self.target = target
         if target_score is not None:
             self.target_score = target_score
+            self.__target_score_type = "PPS"
         self.binning_threshold = (
             binning_threshold
             if binning_threshold
