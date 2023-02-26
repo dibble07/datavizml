@@ -377,6 +377,16 @@ def test_multi(type_data, dtype_target, matrix_full):
         # call object
         eda()
 
+        # check single distribution pps scores are correct
+        for sd in eda.single_distributions:
+            if sd.has_target:
+                assert (
+                    np.round(sd.target_score, 3)
+                    == expected_prediction_matrix.loc[
+                        sd.feature.name[2:], sd.target.name[2:]
+                    ]
+                )
+
         # check summary dataframe - structure only as values tested in singledistribution
         summary = eda.summary()
         assert isinstance(summary, pd.DataFrame)
