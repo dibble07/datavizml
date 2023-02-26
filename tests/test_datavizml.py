@@ -240,7 +240,7 @@ def test_multi_improper_inputs():
     "dtype_target",
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
 )
-@pytest.mark.parametrize("type_data", ["dataframe"])  # , "series"
+@pytest.mark.parametrize("type_data", ["dataframe", "series"])
 def test_multi(type_data, dtype_target, matrix_full):
     # initialise raw values - include a missing value and a modal value
     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
