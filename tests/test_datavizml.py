@@ -71,136 +71,136 @@ def test_single_prescribed_score():
     assert sd.target_score == 0.1
 
 
-# @pytest.mark.parametrize(
-#     "dtype_target",
-#     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
-# )
-# @pytest.mark.parametrize(
-#     "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
-# )
-# def test_single(dtype_feature, dtype_target):
-#     # initialise raw values - include a missing value and a modal value
-#     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
+@pytest.mark.parametrize(
+    "dtype_target",
+    ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
+)
+@pytest.mark.parametrize(
+    "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
+)
+def test_single(dtype_feature, dtype_target):
+    # initialise raw values - include a missing value and a modal value
+    raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
-#     # process raw x values based on type
-#     if dtype_feature == "Float64":
-#         # add small value to avoid being downcast to integer
-#         x = [i + 0.01 if not np.isnan(i) else i for i in raw]
-#     elif dtype_feature in ["string", "category"]:
-#         # category is a dtype only for pandas - start with string
-#         x = [str(i) if not np.isnan(i) else i for i in raw]
-#     elif dtype_feature == "boolean":
-#         # convert to boolean
-#         x = [i < 2.5 if not np.isnan(i) else i for i in raw]
-#     elif dtype_feature == "Int64":
-#         x = raw
+    # process raw x values based on type
+    if dtype_feature == "Float64":
+        # add small value to avoid being downcast to integer
+        x = [i + 0.01 if not np.isnan(i) else i for i in raw]
+    elif dtype_feature in ["string", "category"]:
+        # category is a dtype only for pandas - start with string
+        x = [str(i) if not np.isnan(i) else i for i in raw]
+    elif dtype_feature == "boolean":
+        # convert to boolean
+        x = [i < 2.5 if not np.isnan(i) else i for i in raw]
+    elif dtype_feature == "Int64":
+        x = raw
 
-#     # process raw y values based on type
-#     if dtype_target == "Float64":
-#         # add small value to avoid being downcast to integer
-#         y = [i + 0.01 if not np.isnan(i) else i for i in raw]
-#     elif dtype_target in ["string", "category"]:
-#         # category is a dtype only for pandas - start with string
-#         y = [str(i) if not np.isnan(i) else i for i in raw]
-#     elif dtype_target == "boolean":
-#         # convert to boolean
-#         y = [i < 2.5 if not np.isnan(i) else i for i in raw]
-#     elif dtype_target == "Int64":
-#         y = raw
-#     elif dtype_target == "no target provided":
-#         y = None
+    # process raw y values based on type
+    if dtype_target == "Float64":
+        # add small value to avoid being downcast to integer
+        y = [i + 0.01 if not np.isnan(i) else i for i in raw]
+    elif dtype_target in ["string", "category"]:
+        # category is a dtype only for pandas - start with string
+        y = [str(i) if not np.isnan(i) else i for i in raw]
+    elif dtype_target == "boolean":
+        # convert to boolean
+        y = [i < 2.5 if not np.isnan(i) else i for i in raw]
+    elif dtype_target == "Int64":
+        y = raw
+    elif dtype_target == "no target provided":
+        y = None
 
-#     # convert x values to inputs
-#     x_name = f"x_{dtype_feature}".capitalize()
-#     x_final = pd.Series(x, name=x_name)
+    # convert x values to inputs
+    x_name = f"x_{dtype_feature}".capitalize()
+    x_final = pd.Series(x, name=x_name)
 
-#     # convert y values to inputs
-#     y_name = f"y_{dtype_target}".capitalize()
-#     if y is None:
-#         y_final = y
-#     else:
-#         y_final = pd.Series(y, name=y_name)
+    # convert y values to inputs
+    y_name = f"y_{dtype_target}".capitalize()
+    if y is None:
+        y_final = y
+    else:
+        y_final = pd.Series(y, name=y_name)
 
-#     # pandas specific dtype conversion
-#     if dtype_feature == "category":
-#         x_final = x_final.astype("category")
-#     if dtype_target == "category":
-#         y_final = y_final.astype("category")
+    # pandas specific dtype conversion
+    if dtype_feature == "category":
+        x_final = x_final.astype("category")
+    if dtype_target == "category":
+        y_final = y_final.astype("category")
 
-#     # decide target analysis type
-#     if dtype_target in ["Int64", "Float64"]:
-#         target_analysis_type = "regression"
-#     elif dtype_target in ["string", "category", "boolean"]:
-#         target_analysis_type = "classification"
+    # decide target analysis type
+    if dtype_target in ["Int64", "Float64"]:
+        target_analysis_type = "regression"
+    elif dtype_target in ["string", "category", "boolean"]:
+        target_analysis_type = "classification"
 
-#     # set expected feature score
-#     if dtype_feature in ["Int64", "Float64"]:
-#         expected_feature_score = 0.139
-#     elif dtype_feature in ["string", "category"]:
-#         expected_feature_score = 0.5
-#     elif dtype_feature in ["boolean"]:
-#         expected_feature_score = 0.625
+    # set expected feature score
+    if dtype_feature in ["Int64", "Float64"]:
+        expected_feature_score = 0.139
+    elif dtype_feature in ["string", "category"]:
+        expected_feature_score = 0.5
+    elif dtype_feature in ["boolean"]:
+        expected_feature_score = 0.625
 
-#     # set expected feature score
-#     if dtype_feature == "boolean":
-#         if dtype_target == "boolean":
-#             expected_target_score = 1
-#         elif dtype_target in ["string", "category"]:
-#             expected_target_score = 0.260
-#         elif dtype_target in ["Int64", "Float64"]:
-#             expected_target_score = 0.634
-#     else:
-#         expected_target_score = 1
+    # set expected feature score
+    if dtype_feature == "boolean":
+        if dtype_target == "boolean":
+            expected_target_score = 1
+        elif dtype_target in ["string", "category"]:
+            expected_target_score = 0.260
+        elif dtype_target in ["Int64", "Float64"]:
+            expected_target_score = 0.634
+    else:
+        expected_target_score = 1
 
-#     # initialise object
-#     _, ax = plt.subplots()
-#     sd = SingleDistribution(
-#         feature=x_final,
-#         ax=ax,
-#         target=y_final,
-#     )
+    # initialise object
+    _, ax = plt.subplots()
+    sd = SingleDistribution(
+        feature=x_final,
+        ax=ax,
+        target=y_final,
+    )
 
-#     # check printing
-#     captured = sd.__str__()
-#     target_str = (
-#         dtype_target
-#         if dtype_target == "no target provided"
-#         else f"{y_name} ({dtype_target} - {target_analysis_type})"
-#     )
-#     expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}"
-#     assert expected == captured
+    # check printing
+    captured = sd.__str__()
+    target_str = (
+        dtype_target
+        if dtype_target == "no target provided"
+        else f"{y_name} ({dtype_target} - {target_analysis_type})"
+    )
+    expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}"
+    assert expected == captured
 
-#     # call object
-#     sd()
+    # call object
+    sd()
 
-#     # extract values using summary dictionary
-#     summary = sd.to_dict()
+    # extract values using summary dictionary
+    summary = sd.to_dict()
 
-#     # check feature parameters
-#     assert summary["feature_name"] == x_name
-#     assert summary["feature_dtype"] == dtype_feature
-#     assert np.round(summary["feature_score"], 3) == expected_feature_score
-#     assert (
-#         summary["feature_score_type"] == "Inter-quartile skew"
-#         if sd.feature_is_numeric and not sd.feature_is_bool
-#         else "Categorical skew"
-#     )
-#     assert summary["feature_nunique"] == 6 if dtype_feature != "boolean" else 3
-#     assert summary["feature_missing_proportion"] == 1 / 9
+    # check feature parameters
+    assert summary["feature_name"] == x_name
+    assert summary["feature_dtype"] == dtype_feature
+    assert np.round(summary["feature_score"], 3) == expected_feature_score
+    assert (
+        summary["feature_score_type"] == "Inter-quartile skew"
+        if sd.feature_is_numeric and not sd.feature_is_bool
+        else "Categorical skew"
+    )
+    assert summary["feature_nunique"] == 6 if dtype_feature != "boolean" else 3
+    assert summary["feature_missing_proportion"] == 1 / 9
 
-#     # check target parameters
-#     if sd.has_target:
-#         assert summary["target_name"] == y_name
-#         assert summary["target_dtype"] == dtype_target
-#         assert np.round(summary["target_score"], 3) == expected_target_score
-#         assert summary["target_score_type"] == "PPS"
-#     else:
-#         assert summary["target_name"] == None
-#         assert summary["target_dtype"] == None
-#         assert np.isnan(summary["target_score"])
-#         assert summary["target_score_type"] == "N/A"
+    # check target parameters
+    if sd.has_target:
+        assert summary["target_name"] == y_name
+        assert summary["target_dtype"] == dtype_target
+        assert np.round(summary["target_score"], 3) == expected_target_score
+        assert summary["target_score_type"] == "PPS"
+    else:
+        assert summary["target_name"] == None
+        assert summary["target_dtype"] == None
+        assert np.isnan(summary["target_score"])
+        assert summary["target_score_type"] == "N/A"
 
-#     plt.close()
+    plt.close()
 
 
 def test_multi_improper_inputs():
@@ -270,7 +270,7 @@ def test_multi(type_data, dtype_target, matrix_full):
         y = None
 
     # convert x values to inputs
-    x_names_raw = [f"x_{i}".capitalize() for i in x.keys()]
+    x_names_raw = [f"x_{i}" for i in x.keys()]
     if type_data == "dataframe":
         x_final_list = [pd.DataFrame(x)]
         x_final_list[0].columns = x_names_raw
@@ -284,7 +284,7 @@ def test_multi(type_data, dtype_target, matrix_full):
         x_types_list = [[i] for i in x.keys()]
 
     # convert y values to inputs
-    y_name = f"y_{dtype_target}".capitalize()
+    y_name = f"y_{dtype_target}"
     if y is None:
         y_final = y
     else:
@@ -293,7 +293,7 @@ def test_multi(type_data, dtype_target, matrix_full):
     # pandas specific dtype conversion
     if type_data == "dataframe":
         x_final_list[0] = x_final_list[0].astype(
-            {name.capitalize(): type_ for type_, name in zip(x.keys(), x_names_raw)}
+            {name: type_ for type_, name in zip(x.keys(), x_names_raw)}
         )
     elif type_data == "series":
         x_final_list = [i.astype(type_) for type_, i in zip(x.keys(), x_final_list)]
@@ -359,25 +359,6 @@ def test_multi(type_data, dtype_target, matrix_full):
             index=["boolean", "category", "Float64", "Int64", "string"],
             columns=["boolean", "category", "Float64", "Int64", "string"],
         )
-        # duplicate rows and columns of target
-        if eda.has_target:
-            if eda.prediction_matrix_full:
-                # duplicate rows and columns of target
-                expected_prediction_matrix = pd.concat(
-                    [
-                        expected_prediction_matrix,
-                        expected_prediction_matrix.loc[[dtype_target], :],
-                    ]
-                )
-                expected_prediction_matrix = pd.concat(
-                    [
-                        expected_prediction_matrix,
-                        expected_prediction_matrix.loc[:, [dtype_target]],
-                    ],
-                    axis=1,
-                )
-            else:
-                expected_prediction_matrix = expected_prediction_matrix[[dtype_target]]
 
         # check printing
         captured = eda.__str__()
@@ -420,14 +401,15 @@ def test_multi(type_data, dtype_target, matrix_full):
         if not eda.has_target and not eda.prediction_matrix_full:
             assert eda.prediction_matrix == None
         else:
-            captured_prediction_matrix = (
-                eda.prediction_matrix.pivot(index="x", columns="y", values="ppscore")
-                .round(3)
-                .values
-            )
-            assert np.array_equal(
-                expected_prediction_matrix, captured_prediction_matrix
-            )
+            captured_prediction_matrix = eda.prediction_matrix.pivot(
+                index="x", columns="y", values="ppscore"
+            ).round(3)
+            for col_name, col in captured_prediction_matrix.items():
+                for row_name, captured_val in col.items():
+                    expected_val = expected_prediction_matrix.loc[
+                        row_name[2:], col_name[2:]
+                    ]
+                    assert expected_val == captured_val
 
         # close figure to save memory
         plt.close(eda.fig)
