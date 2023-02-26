@@ -234,8 +234,8 @@ def test_multi_improper_inputs():
 
 @pytest.mark.parametrize(
     "matrix_full",
-    [True],
-)  # , False
+    [True, False],
+)
 @pytest.mark.parametrize(
     "dtype_target",
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
@@ -361,19 +361,23 @@ def test_multi(type_data, dtype_target, matrix_full):
         )
         # duplicate rows and columns of target
         if eda.has_target:
-            expected_prediction_matrix = pd.concat(
-                [
-                    expected_prediction_matrix,
-                    expected_prediction_matrix.loc[[dtype_target], :],
-                ]
-            )
-            expected_prediction_matrix = pd.concat(
-                [
-                    expected_prediction_matrix,
-                    expected_prediction_matrix.loc[:, [dtype_target]],
-                ],
-                axis=1,
-            )
+            if eda.prediction_matrix_full:
+                # duplicate rows and columns of target
+                expected_prediction_matrix = pd.concat(
+                    [
+                        expected_prediction_matrix,
+                        expected_prediction_matrix.loc[[dtype_target], :],
+                    ]
+                )
+                expected_prediction_matrix = pd.concat(
+                    [
+                        expected_prediction_matrix,
+                        expected_prediction_matrix.loc[:, [dtype_target]],
+                    ],
+                    axis=1,
+                )
+            else:
+                expected_prediction_matrix = expected_prediction_matrix[[dtype_target]]
 
         # check printing
         captured = eda.__str__()
@@ -413,12 +417,17 @@ def test_multi(type_data, dtype_target, matrix_full):
         assert summary.shape[0] == len(x_names)
 
         # check prediction matrix values
-        captured_prediction_matrix = (
-            eda.prediction_matrix.pivot(index="x", columns="y", values="ppscore")
-            .round(3)
-            .values
-        )
-        assert np.array_equal(expected_prediction_matrix, captured_prediction_matrix)
+        if not eda.has_target and not eda.prediction_matrix_full:
+            assert eda.prediction_matrix == None
+        else:
+            captured_prediction_matrix = (
+                eda.prediction_matrix.pivot(index="x", columns="y", values="ppscore")
+                .round(3)
+                .values
+            )
+            assert np.array_equal(
+                expected_prediction_matrix, captured_prediction_matrix
+            )
 
         # close figure to save memory
         plt.close(eda.fig)
