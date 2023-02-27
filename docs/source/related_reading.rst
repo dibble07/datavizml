@@ -1,5 +1,5 @@
 Distribution scoring metrics
-===============
+============================
 
 - `Predictive Power Score (PPS) <https://github.com/8080labs/ppscore#cases-and-their-score-metrics>`_
     - The improvement in an evaluation metric from a naive model to a model based on the selected feature, relative to the potential improvement achieved from a perfect feature

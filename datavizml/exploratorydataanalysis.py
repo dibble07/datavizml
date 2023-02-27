@@ -64,13 +64,13 @@ class ExploratoryDataAnalysis:
                 )
 
         # initialise figure and axes
-        self.init_figure()
+        self.__init_figure()
 
         # calculate prediction matrix
-        self.calculate_prediction_matrix()
+        self.__calculate_prediction_matrix()
 
         # initialise figure and axes
-        self.init_single_distributions()
+        self.__init_single_distributions()
 
     def __str__(self):
         """Returns a string representation of the instance
@@ -120,7 +120,7 @@ class ExploratoryDataAnalysis:
         return self.fig
 
     # initialise figure
-    def init_figure(self):
+    def __init_figure(self):
         """Initialise a figure with the required size and axes for the exploratory data analysis"""
         # create figure of required size with the required axes
         figsize = (self.__figure_width, self.__axes_height * self.__nrows)
@@ -133,7 +133,7 @@ class ExploratoryDataAnalysis:
         self.ax = ax
 
     # calculate prediction matrix
-    def calculate_prediction_matrix(self):
+    def __calculate_prediction_matrix(self):
         "Calculate prediction matrix for specified combinations of features/targets"
         # combine feature and target
         if self.has_target:
@@ -162,7 +162,7 @@ class ExploratoryDataAnalysis:
                 self.__prediction_matrix = None
 
     # initialise distribution plot
-    def init_single_distributions(self):
+    def __init_single_distributions(self):
         """Initialise a single distribution object for each feature"""
         # initialise all single distribution objects
         self.single_distributions = []
