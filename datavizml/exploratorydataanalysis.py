@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import ppscore as pps
+import seaborn as sns
 
 
 class ExploratoryDataAnalysis:
@@ -188,6 +189,40 @@ class ExploratoryDataAnalysis:
         """
         data = [sd.to_dict() for sd in self.single_distributions]
         return pd.DataFrame(data=data)
+
+    # create prediction power plot
+    def prediction_score_plot(self, ax):
+        """Plot the prediction scores as a heatmap
+
+        :param ax: Axes to plot on
+        :type ax: matplotlib Axes
+
+        :return: The heatmap plot
+        :rtype: matplotlib Axes
+        """
+        # extract data and plot heatmap
+        if self.prediction_matrix is not None:
+            data = self.prediction_matrix.rename(
+                columns={"x": "x (predictor)", "y": "y (predictee)"}
+            )
+            data = data.pivot(
+                index="x (predictor)", columns="y (predictee)", values="ppscore"
+            )
+            sns.heatmap(
+                data=data,
+                vmin=0,
+                vmax=1,
+                cmap="GnBu",
+                annot=True,
+                fmt=".2f",
+                ax=ax,
+            )
+        else:
+            raise TypeError(
+                f"No appropriate matrix is present. This most likely is because a reduced dataframe was calculated with no target"
+            )
+
+        return ax
 
     # data getter
     @property

@@ -421,5 +421,14 @@ def test_multi(type_data, dtype_target, matrix_full):
                     ]
                     assert expected_val == captured_val
 
+        # checks prediction heatmap plotting
+        fig, ax = plt.subplots()
+        if not eda.has_target and not eda.prediction_matrix_full:
+            with pytest.raises(TypeError):
+                eda.prediction_score_plot(ax=ax)
+        else:
+            eda.prediction_score_plot(ax=ax)
+
         # close figure to save memory
         plt.close(eda.fig)
+        plt.close(fig)
