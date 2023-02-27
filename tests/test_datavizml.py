@@ -238,11 +238,15 @@ def test_multi_improper_inputs():
 
 
 @pytest.mark.parametrize(
+    "matrix_full",
+    [True, False],
+)
+@pytest.mark.parametrize(
     "dtype_target",
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
 )
 @pytest.mark.parametrize("type_data", ["dataframe", "series"])
-def test_multi(type_data, dtype_target):
+def test_multi(type_data, dtype_target, matrix_full):
     # initialise raw values - include a missing value and a modal value
     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
@@ -271,7 +275,7 @@ def test_multi(type_data, dtype_target):
         y = None
 
     # convert x values to inputs
-    x_names_raw = [f"x_{i}".capitalize() for i in x.keys()]
+    x_names_raw = [f"x_{i}" for i in x.keys()]
     if type_data == "dataframe":
         x_final_list = [pd.DataFrame(x)]
         x_final_list[0].columns = x_names_raw
@@ -285,7 +289,7 @@ def test_multi(type_data, dtype_target):
         x_types_list = [[i] for i in x.keys()]
 
     # convert y values to inputs
-    y_name = f"y_{dtype_target}".capitalize()
+    y_name = f"y_{dtype_target}"
     if y is None:
         y_final = y
     else:
@@ -294,7 +298,7 @@ def test_multi(type_data, dtype_target):
     # pandas specific dtype conversion
     if type_data == "dataframe":
         x_final_list[0] = x_final_list[0].astype(
-            {name.capitalize(): type_ for type_, name in zip(x.keys(), x_names_raw)}
+            {name: type_ for type_, name in zip(x.keys(), x_names_raw)}
         )
     elif type_data == "series":
         x_final_list = [i.astype(type_) for type_, i in zip(x.keys(), x_final_list)]
@@ -309,6 +313,7 @@ def test_multi(type_data, dtype_target):
                 data=x_final,
                 ncols=2,
                 target=y_final,
+                prediction_matrix_full=matrix_full,
             )
         )
 
@@ -316,6 +321,49 @@ def test_multi(type_data, dtype_target):
     for eda, x_names, x_types in zip(eda_list, x_names_list, x_types_list):
         # check indexing
         assert isinstance(eda[0], SingleDistribution)
+
+        # set expected prediction matrix
+        expected_prediction_matrix = pd.DataFrame(
+            [
+                [
+                    1.0,
+                    0.26,
+                    0.634,
+                    0.634,
+                    0.26,
+                ],
+                [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                ],
+                [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                ],
+                [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                ],
+                [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                ],
+            ],
+            index=["boolean", "category", "Float64", "Int64", "string"],
+            columns=["boolean", "category", "Float64", "Int64", "string"],
+        )
 
         # check printing
         captured = eda.__str__()
@@ -333,6 +381,16 @@ def test_multi(type_data, dtype_target):
 
         # call object
         eda()
+
+        # check single distribution pps scores are correct
+        for sd in eda.single_distributions:
+            if sd.has_target:
+                assert (
+                    np.round(sd.target_score, 3)
+                    == expected_prediction_matrix.loc[
+                        sd.feature.name[2:], sd.target.name[2:]
+                    ]
+                )
 
         # check summary dataframe - structure only as values tested in singledistribution
         summary = eda.summary()
@@ -354,5 +412,28 @@ def test_multi(type_data, dtype_target):
         ).all()
         assert summary.shape[0] == len(x_names)
 
+        # check prediction matrix values
+        if not eda.has_target and not eda.prediction_matrix_full:
+            assert eda.prediction_matrix == None
+        else:
+            captured_prediction_matrix = eda.prediction_matrix.pivot(
+                index="x", columns="y", values="ppscore"
+            ).round(3)
+            for col_name, col in captured_prediction_matrix.items():
+                for row_name, captured_val in col.items():
+                    expected_val = expected_prediction_matrix.loc[
+                        row_name[2:], col_name[2:]
+                    ]
+                    assert expected_val == captured_val
+
+        # checks prediction heatmap plotting
+        fig, ax = plt.subplots()
+        if not eda.has_target and not eda.prediction_matrix_full:
+            with pytest.raises(TypeError):
+                eda.prediction_score_plot(ax=ax)
+        else:
+            eda.prediction_score_plot(ax=ax)
+
         # close figure to save memory
         plt.close(eda.fig)
+        plt.close(fig)

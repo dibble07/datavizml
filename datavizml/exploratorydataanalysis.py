@@ -1,6 +1,9 @@
 from datavizml import singledistribution as sd, utils
 from matplotlib import pyplot as plt
+import numpy as np
 import pandas as pd
+import ppscore as pps
+import seaborn as sns
 
 
 class ExploratoryDataAnalysis:
@@ -8,10 +11,16 @@ class ExploratoryDataAnalysis:
 
     :param data: Features to be analysed
     :type data: pandas Series of pandas DataFrame
-    :param target: Target to be predicted
-    :type target: pandas Series, optional
     :param ncols: Number of columns to use in figure
     :type ncols: float, optional
+    :param target: Target to be predicted
+    :type target: pandas Series, optional
+    :param prediction_matrix_full: full or reduced prediction matrix
+    :type prediction_matrix_full: boolean, optional
+    :param figure_width: width of figure
+    :type figure_width: int, optional
+    :param axes_height: height of axes
+    :type axes_height: int, optional
     """
 
     FIGURE_WIDTH = 18  # width of figure
@@ -22,6 +31,7 @@ class ExploratoryDataAnalysis:
         data,
         ncols,
         target=None,
+        prediction_matrix_full=False,
         figure_width=FIGURE_WIDTH,
         axes_height=AXES_HEIGHT,
     ):
@@ -32,6 +42,7 @@ class ExploratoryDataAnalysis:
         if self.has_target:
             self.target = target
         self.__ncols = ncols
+        self.__prediction_matrix_full = prediction_matrix_full
         self.__figure_width = figure_width
         self.__axes_height = axes_height
 
@@ -54,6 +65,9 @@ class ExploratoryDataAnalysis:
 
         # initialise figure and axes
         self.init_figure()
+
+        # calculate prediction matrix
+        self.calculate_prediction_matrix()
 
         # initialise figure and axes
         self.init_single_distributions()
@@ -118,6 +132,35 @@ class ExploratoryDataAnalysis:
         self.fig = fig
         self.ax = ax
 
+    # calculate prediction matrix
+    def calculate_prediction_matrix(self):
+        "Calculate prediction matrix for specified combinations of features/targets"
+        # combine feature and target
+        if self.has_target:
+            df = pd.concat([self.data, self.target], axis=1)
+        else:
+            df = self.data
+
+        # calculate full matrix
+        if self.__prediction_matrix_full:
+            self.__prediction_matrix = pps.matrix(
+                df=df,
+                sample=None,
+                invalid_score=np.nan,
+            )
+        else:
+            # calculate reduced matrix
+            if self.has_target:
+                self.__prediction_matrix = pps.predictors(
+                    df=df,
+                    y=self.target.name,
+                    sorted=False,
+                    sample=None,
+                    invalid_score=np.nan,
+                )
+            else:
+                self.__prediction_matrix = None
+
     # initialise distribution plot
     def init_single_distributions(self):
         """Initialise a single distribution object for each feature"""
@@ -127,8 +170,13 @@ class ExploratoryDataAnalysis:
             self.single_distributions.append(
                 sd.SingleDistribution(
                     feature=feature,
-                    target=self.target if self.has_target else None,
                     ax=ax,
+                    target=self.target if self.has_target else None,
+                    target_score=self.prediction_matrix.pivot(
+                        index="x", columns="y", values="ppscore"
+                    ).loc[feature.name, self.target.name]
+                    if self.has_target
+                    else None,
                 )
             )
 
@@ -141,6 +189,40 @@ class ExploratoryDataAnalysis:
         """
         data = [sd.to_dict() for sd in self.single_distributions]
         return pd.DataFrame(data=data)
+
+    # create prediction power plot
+    def prediction_score_plot(self, ax):
+        """Plot the prediction scores as a heatmap
+
+        :param ax: Axes to plot on
+        :type ax: matplotlib Axes
+
+        :return: The heatmap plot
+        :rtype: matplotlib Axes
+        """
+        # extract data and plot heatmap
+        if self.prediction_matrix is not None:
+            data = self.prediction_matrix.rename(
+                columns={"x": "x (predictor)", "y": "y (predictee)"}
+            )
+            data = data.pivot(
+                index="x (predictor)", columns="y (predictee)", values="ppscore"
+            )
+            sns.heatmap(
+                data=data,
+                vmin=0,
+                vmax=1,
+                cmap="GnBu",
+                annot=True,
+                fmt=".2f",
+                ax=ax,
+            )
+        else:
+            raise TypeError(
+                f"No appropriate matrix is present. This most likely is because a reduced dataframe was calculated with no target"
+            )
+
+        return ax
 
     # data getter
     @property
@@ -175,3 +257,15 @@ class ExploratoryDataAnalysis:
         else:
             # convert to series and set
             self.__target = utils.to_series(target)
+
+    # prediction matrix getter
+    @property
+    def prediction_matrix(self):
+        """The prediction matrix data"""
+        return self.__prediction_matrix
+
+    # prediction matrix full getter
+    @property
+    def prediction_matrix_full(self):
+        """The prediction matrix complexity flag"""
+        return self.__prediction_matrix_full
