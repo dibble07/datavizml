@@ -8,6 +8,50 @@ import pytest
 np.random.seed(42)
 
 
+# set expected prediction matrix
+expected_prediction_matrix = pd.DataFrame(
+    [
+        [
+            1.0,
+            0.26,
+            0.634,
+            0.634,
+            0.26,
+        ],
+        [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+        ],
+    ],
+    index=["boolean", "category", "Float64", "Int64", "string"],
+    columns=["boolean", "category", "Float64", "Int64", "string"],
+)
+
+
 def test_single_improper_inputs():
     # initialise inputs
     _, ax = plt.subplots()
@@ -146,16 +190,11 @@ def test_single(dtype_feature, dtype_target):
     elif dtype_feature in ["boolean"]:
         expected_feature_score = 0.625
 
-    # set expected feature score
-    if dtype_feature == "boolean":
-        if dtype_target == "boolean":
-            expected_target_score = 1
-        elif dtype_target in ["string", "category"]:
-            expected_target_score = 0.260
-        elif dtype_target in ["Int64", "Float64"]:
-            expected_target_score = 0.634
-    else:
-        expected_target_score = 1
+    # set expected target score
+    if dtype_target != "no target provided":
+        expected_target_score = expected_prediction_matrix.loc[
+            dtype_feature, dtype_target
+        ]
 
     # initialise object
     _, ax = plt.subplots()
@@ -321,49 +360,6 @@ def test_multi(type_data, dtype_target, matrix_full):
     for eda, x_names, x_types in zip(eda_list, x_names_list, x_types_list):
         # check indexing
         assert isinstance(eda[0], SingleDistribution)
-
-        # set expected prediction matrix
-        expected_prediction_matrix = pd.DataFrame(
-            [
-                [
-                    1.0,
-                    0.26,
-                    0.634,
-                    0.634,
-                    0.26,
-                ],
-                [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                ],
-                [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                ],
-                [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                ],
-                [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                ],
-            ],
-            index=["boolean", "category", "Float64", "Int64", "string"],
-            columns=["boolean", "category", "Float64", "Int64", "string"],
-        )
 
         # check printing
         captured = eda.__str__()
