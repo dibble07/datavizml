@@ -21,6 +21,7 @@ dependencies = [
     "ppscore",
     "scikit-learn",
     "scipy",
+    "seaborn",
     "statsmodels",
 ]
 dynamic = ["version"]
