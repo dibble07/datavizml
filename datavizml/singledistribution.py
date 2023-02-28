@@ -42,9 +42,13 @@ class SingleDistribution:
                 # clear target if the same as feature
                 del self.__target
                 self.has_target = False
-        if target_score is not None:
-            self.target_score = target_score
+        if isinstance(target_score, (int, float)):
+            self.__target_score = target_score
             self.__target_score_type = "PPS"
+        elif target_score is not None:
+            raise TypeError(
+                f"target_score is of {target_score.__class__.__name__} type which is not valid"
+            )
         self.binning_threshold = (
             binning_threshold
             if binning_threshold
@@ -241,17 +245,17 @@ class SingleDistribution:
             lower, median, upper = np.quantile(self.feature.dropna(), [0.25, 0.5, 0.75])
             middle = (upper + lower) / 2
             range_ = abs(upper - lower)
-            self.feature_score = abs((median - middle)) / range_ / 2
+            self.__feature_score = abs((median - middle)) / range_ / 2
             self.__feature_score_type = "Inter-quartile skew"
         else:
             # calculate skew towards the mode
-            self.feature_score = self.feature.value_counts(normalize=True).max()
+            self.__feature_score = self.feature.value_counts(normalize=True).max()
             self.__feature_score_type = "Categorical skew"
 
     def calculate_target_score(self):
         """Calculate the score for the feature based on its predictive power"""
         if self.has_target:
-            self.target_score = pps.score(
+            self.__target_score = pps.score(
                 df=pd.concat([self.feature, self.target], axis=1),
                 x=self.feature.name,
                 y=self.target.name,
@@ -260,7 +264,7 @@ class SingleDistribution:
             )["ppscore"]
             self.__target_score_type = "PPS"
         else:
-            self.target_score = np.nan
+            self.__target_score = np.nan
             self.__target_score_type = "N/A"
 
     def summarise_feature(self):
@@ -366,43 +370,11 @@ class SingleDistribution:
         """The score value of the relationship to target"""
         return self.__target_score
 
-    # target_score setter
-    @target_score.setter
-    def target_score(self, target_score):
-        if hasattr(self, "target_score"):
-            # do not allow changing of data
-            raise AttributeError("This attribute has already been set")
-
-        else:
-            # only accept numerical values
-            if isinstance(target_score, (int, float)):
-                self.__target_score = target_score
-            else:
-                raise TypeError(
-                    f"target_score is of {target_score.__class__.__name__} type which is not valid"
-                )
-
     # feature score getter
     @property
     def feature_score(self):
         """The score value of the feature distribution"""
         return self.__feature_score
-
-    # feature_score setter
-    @feature_score.setter
-    def feature_score(self, feature_score):
-        if hasattr(self, "feature_score"):
-            # do not allow changing of data
-            raise AttributeError("This attribute has already been set")
-
-        else:
-            # only accept numerical values
-            if isinstance(feature_score, (int, float)):
-                self.__feature_score = feature_score
-            else:
-                raise TypeError(
-                    f"feature_score is of {feature_score.__class__.__name__} type which is not valid"
-                )
 
     # missing proportion getter
     @property
