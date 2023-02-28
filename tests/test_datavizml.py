@@ -1,55 +1,12 @@
 from datavizml.singledistribution import SingleDistribution
 from datavizml.exploratorydataanalysis import ExploratoryDataAnalysis
+from tests.utils import expected_prediction_matrix
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
 np.random.seed(42)
-
-
-# set expected prediction matrix
-expected_prediction_matrix = pd.DataFrame(
-    [
-        [
-            1.0,
-            0.26,
-            0.634,
-            0.634,
-            0.26,
-        ],
-        [
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-        ],
-        [
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-        ],
-        [
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-        ],
-        [
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-        ],
-    ],
-    index=["boolean", "category", "Float64", "Int64", "string"],
-    columns=["boolean", "category", "Float64", "Int64", "string"],
-)
 
 
 def test_single_improper_inputs():
