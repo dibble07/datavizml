@@ -70,6 +70,8 @@ def test_prescribed_score():
 
     # check inability to reset values
     with pytest.raises(AttributeError):
+        sd.feature_score = 0.2
+    with pytest.raises(AttributeError):
         sd.target_score = 0.2
 
     # check target score value
