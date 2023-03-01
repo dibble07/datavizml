@@ -31,6 +31,7 @@ class ExploratoryDataAnalysis:
         data,
         ncols,
         target=None,
+        target_rebalance=False,
         prediction_matrix_full=False,
         figure_width=FIGURE_WIDTH,
         axes_height=AXES_HEIGHT,
@@ -41,6 +42,7 @@ class ExploratoryDataAnalysis:
         self.has_target = target is not None
         if self.has_target:
             self.target = target
+            self.__target_rebalance = target_rebalance
         self.__ncols = ncols
         self.__prediction_matrix_full = prediction_matrix_full
         self.__figure_width = figure_width
@@ -54,7 +56,15 @@ class ExploratoryDataAnalysis:
             [utils.classify_type(x)[2] for _, x in self.data.items()]
         )
         if self.has_target:
-            _, _, self.target_dtype = utils.classify_type(self.target)
+            (
+                self.target_is_bool,
+                self.target_is_numeric,
+                self.target_dtype,
+            ) = utils.classify_type(self.target)
+            if self.target_is_numeric and not self.target_is_bool:
+                self.target_type = "regression"
+            else:
+                self.target_type = "classification"
 
         # check input
         if self.has_target:
@@ -137,7 +147,13 @@ class ExploratoryDataAnalysis:
         "Calculate prediction matrix for specified combinations of features/targets"
         # combine feature and target
         if self.has_target:
-            df = pd.concat([self.data, self.target], axis=1)
+            # rebalance classes
+            if self.target_type == "classification" and self.__target_rebalance:
+                x_balanced, y_balanced = utils.class_rebalance(self.data, self.target)
+                df = pd.concat([x_balanced, y_balanced], axis=1)
+            else:
+                df = pd.concat([self.data, self.target], axis=1)
+
         else:
             df = self.data
 
