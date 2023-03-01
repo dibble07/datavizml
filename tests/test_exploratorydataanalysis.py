@@ -39,6 +39,10 @@ def test_improper_inputs():
 
 
 @pytest.mark.parametrize(
+    "target_rebalance",
+    [False],
+)  # True,
+@pytest.mark.parametrize(
     "matrix_full",
     [True, False],
 )
@@ -47,7 +51,7 @@ def test_improper_inputs():
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
 )
 @pytest.mark.parametrize("type_data", ["dataframe", "series"])
-def test_combinations(type_data, dtype_target, matrix_full):
+def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
     # initialise raw values - include a missing value and a modal value
     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
@@ -114,6 +118,7 @@ def test_combinations(type_data, dtype_target, matrix_full):
                 data=x_final,
                 ncols=2,
                 target=y_final,
+                target_rebalance=target_rebalance,
                 prediction_matrix_full=matrix_full,
             )
         )
@@ -143,11 +148,8 @@ def test_combinations(type_data, dtype_target, matrix_full):
         # check single distribution pps scores are correct
         for sd in eda.single_distributions:
             if sd.has_target:
-                assert (
-                    np.round(sd.target_score, 3)
-                    == expected_prediction_matrix.loc[
-                        sd.feature.name[2:], sd.target.name[2:]
-                    ]
+                assert np.round(sd.target_score, 3) == expected_prediction_matrix(
+                    sd.feature.name[2:], sd.target.name[2:], target_rebalance
                 )
 
         # check summary dataframe - structure only as values tested in singledistribution
@@ -179,9 +181,9 @@ def test_combinations(type_data, dtype_target, matrix_full):
             ).round(3)
             for col_name, col in captured_prediction_matrix.items():
                 for row_name, captured_val in col.items():
-                    expected_val = expected_prediction_matrix.loc[
-                        row_name[2:], col_name[2:]
-                    ]
+                    expected_val = expected_prediction_matrix(
+                        row_name[2:], col_name[2:], target_rebalance
+                    )
                     assert expected_val == captured_val
 
         # checks prediction heatmap plotting

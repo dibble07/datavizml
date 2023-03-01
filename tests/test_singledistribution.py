@@ -79,13 +79,17 @@ def test_prescribed_score():
 
 
 @pytest.mark.parametrize(
+    "target_rebalance",
+    [False],
+)  # True,
+@pytest.mark.parametrize(
     "dtype_target",
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
 )
 @pytest.mark.parametrize(
     "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
 )
-def test_combinations(dtype_feature, dtype_target):
+def test_combinations(dtype_feature, dtype_target, target_rebalance):
     # initialise raw values - include a missing value and a modal value
     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
@@ -150,9 +154,9 @@ def test_combinations(dtype_feature, dtype_target):
 
     # set expected target score
     if dtype_target != "no target provided":
-        expected_target_score = expected_prediction_matrix.loc[
-            dtype_feature, dtype_target
-        ]
+        expected_target_score = expected_prediction_matrix(
+            dtype_feature, dtype_target, target_rebalance
+        )
 
     # initialise object
     _, ax = plt.subplots()
@@ -160,6 +164,7 @@ def test_combinations(dtype_feature, dtype_target):
         feature=x_final,
         ax=ax,
         target=y_final,
+        target_rebalance=target_rebalance,
     )
 
     # check printing

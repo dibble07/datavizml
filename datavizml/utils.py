@@ -48,7 +48,7 @@ def class_rebalance(x, y):
 
     # calculate how much each class needs to be duplicate
     class_counts = y.value_counts()
-    class_multiples = (class_counts.max() / class_counts).apply(np.ceil).astype(int)
+    class_multiples = (class_counts.max() / class_counts).round().astype(int)
 
     # repeat each class's data
     class_balanced_data = []
@@ -57,7 +57,9 @@ def class_rebalance(x, y):
         class_balanced_data.extend([df_class] * multiple)
 
     # create combined rebalanced dataframe
-    df_balanced = pd.concat(class_balanced_data).sample(frac=1, replace=False)
+    df_balanced = pd.concat(class_balanced_data).sample(
+        frac=1, replace=False, random_state=42
+    )
     x_balanced = df_balanced.drop(columns=y.name)
     y_balanced = df_balanced[y.name]
 
