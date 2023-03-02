@@ -29,7 +29,13 @@ class SingleDistribution:
     COLOURMAP_TARGET_DEFAULT = "tab10"  # colour map used for target
 
     def __init__(
-        self, feature, ax, target=None, target_score=None, binning_threshold=None
+        self,
+        feature,
+        ax,
+        target=None,
+        target_score=None,
+        target_rebalance=False,
+        binning_threshold=None,
     ):
         """Constructor method"""
         # input variables
@@ -38,6 +44,7 @@ class SingleDistribution:
         self.has_target = target is not None
         if self.has_target:
             self.target = target
+            self.__target_rebalance = target_rebalance
             if self.feature.name == self.target.name:
                 # clear target if the same as feature
                 del self.__target
@@ -255,8 +262,18 @@ class SingleDistribution:
     def calculate_target_score(self):
         """Calculate the score for the feature based on its predictive power"""
         if self.has_target:
+            # rebalance classes
+            if self.target_type == "classification" and self.__target_rebalance:
+                x_balanced, y_balanced = utils.class_rebalance(
+                    self.feature, self.target
+                )
+                df = pd.concat([x_balanced, y_balanced], axis=1)
+            else:
+                df = pd.concat([self.feature, self.target], axis=1)
+
+            ## calculate score
             self.__target_score = pps.score(
-                df=pd.concat([self.feature, self.target], axis=1),
+                df=df,
                 x=self.feature.name,
                 y=self.target.name,
                 sample=None,
