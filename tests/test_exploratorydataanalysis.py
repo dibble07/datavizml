@@ -40,8 +40,8 @@ def test_improper_inputs():
 
 @pytest.mark.parametrize(
     "target_rebalance",
-    [False],
-)  # True,
+    [True, False],
+)
 @pytest.mark.parametrize(
     "matrix_full",
     [True, False],
@@ -149,7 +149,10 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         for sd in eda.single_distributions:
             if sd.has_target:
                 assert np.round(sd.target_score, 3) == expected_prediction_matrix(
-                    sd.feature.name[2:], sd.target.name[2:], target_rebalance
+                    sd.feature.name[2:],
+                    sd.target.name[2:],
+                    target_rebalance,
+                    dtype_target,
                 )
 
         # check summary dataframe - structure only as values tested in singledistribution
@@ -182,7 +185,10 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
             for col_name, col in captured_prediction_matrix.items():
                 for row_name, captured_val in col.items():
                     expected_val = expected_prediction_matrix(
-                        row_name[2:], col_name[2:], target_rebalance
+                        row_name[2:],
+                        col_name[2:],
+                        target_rebalance and eda.has_target,
+                        dtype_target,
                     )
                     assert expected_val == captured_val
 

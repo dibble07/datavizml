@@ -80,8 +80,8 @@ def test_prescribed_score():
 
 @pytest.mark.parametrize(
     "target_rebalance",
-    [False],
-)  # True,
+    [True, False],
+)
 @pytest.mark.parametrize(
     "dtype_target",
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
@@ -155,7 +155,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance):
     # set expected target score
     if dtype_target != "no target provided":
         expected_target_score = expected_prediction_matrix(
-            dtype_feature, dtype_target, target_rebalance
+            dtype_feature, dtype_target, target_rebalance, dtype_target
         )
 
     # initialise object

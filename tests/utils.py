@@ -13,7 +13,7 @@ expected_prediction_matrix_raw = pd.DataFrame(
     columns=["boolean", "category", "Float64", "Int64", "string"],
 )
 
-expected_prediction_matrix_balanced = pd.DataFrame(
+expected_prediction_matrix_balanced_multi = pd.DataFrame(
     data=[
         [1.000, 0.043, 0.497, 0.497, 0.043],
         [1.000, 1.000, 1.000, 1.000, 1.000],
@@ -25,9 +25,23 @@ expected_prediction_matrix_balanced = pd.DataFrame(
     columns=["boolean", "category", "Float64", "Int64", "string"],
 )
 
+expected_prediction_matrix_balanced_binary = pd.DataFrame(
+    data=[
+        [1.000, 0.225, 0.625, 0.625, 0.225],
+        [1.000, 1.000, 1.000, 1.000, 1.000],
+        [1.000, 1.000, 1.000, 1.000, 1.000],
+        [1.000, 1.000, 1.000, 1.000, 1.000],
+        [1.000, 1.000, 1.000, 1.000, 1.000],
+    ],
+    index=["boolean", "category", "Float64", "Int64", "string"],
+    columns=["boolean", "category", "Float64", "Int64", "string"],
+)
 
-def expected_prediction_matrix(row, col, balanced):
-    if balanced:
-        return expected_prediction_matrix_balanced.loc[row, col]
-    else:
+
+def expected_prediction_matrix(row, col, target_rebalance, type_):
+    if not target_rebalance or type_ in ["Int64", "Float64"]:
         return expected_prediction_matrix_raw.loc[row, col]
+    elif type_ in ["string", "category"]:
+        return expected_prediction_matrix_balanced_multi.loc[row, col]
+    elif type_ in ["boolean"]:
+        return expected_prediction_matrix_balanced_binary.loc[row, col]
