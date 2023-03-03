@@ -249,11 +249,9 @@ class SingleDistribution:
         """Calculate the score for the feature based on its skewness"""
         if self.feature_is_numeric and not self.feature_is_bool:
             # calculate skew of median towards quartiles
-            lower, median, upper = np.quantile(self.feature.dropna(), [0.25, 0.5, 0.75])
-            middle = (upper + lower) / 2
-            range_ = abs(upper - lower)
-            self.__feature_score = abs((median - middle)) / range_ / 2
-            self.__feature_score_type = "Inter-quartile skew"
+            self.__feature_score, self.__feature_score_type = utils.inter_quartile_skew(
+                self.feature.dropna()
+            )
         else:
             # calculate skew towards the mode
             self.__feature_score = self.feature.value_counts(normalize=True).max()

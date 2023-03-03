@@ -74,3 +74,16 @@ def class_rebalance(x, y):
         )
 
     return x_balanced, y_balanced
+
+
+# inter-quartile skew
+def inter_quartile_skew(data):
+    """A function to calculate inter-quartile skew"""
+
+    lower, median, upper = np.quantile(data, [0.25, 0.5, 0.75])
+    middle = (upper + lower) / 2
+    range_ = abs(upper - lower)
+    feature_score = abs((median - middle)) / range_ / 2
+    feature_score_type = "Inter-quartile skew"
+
+    return feature_score, feature_score_type
