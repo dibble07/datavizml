@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy import stats
 import warnings
 
 
@@ -87,3 +88,40 @@ def inter_quartile_skew(data):
     feature_score_type = "Inter-quartile skew"
 
     return feature_score, feature_score_type
+
+
+# reduce skew
+def reduce_skew(data):
+    """A function to transform the data to reduce skew"""
+    # make all data positive
+    min_ = min(data)
+    if min_ <= 0:
+        data = data - min_ + 0.001
+
+    # define transformers
+    transformers = {
+        "boxcox": lambda x: stats.boxcox(x)[0],
+        "square-root": np.sqrt,
+        "square": np.square,
+        "log-2": np.log2,
+        "exp-2": np.exp2,
+    }
+
+    # initiate outputs and skew
+    skew_ = abs(data.skew())
+    transformer_name = None
+    transformed_data = None
+
+    # evaluate all samples
+    for name, trans in transformers.items():
+        # calculate values for current transformer
+        temp_data = pd.Series(trans(data))
+        temp_skew = abs(temp_data.skew())
+
+        # update if skew has been reduced
+        if temp_skew < skew_:
+            skew_ = temp_skew
+            transformer_name = name
+            transformed_data = temp_data
+
+    return transformer_name, transformed_data

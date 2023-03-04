@@ -252,6 +252,11 @@ class SingleDistribution:
             self.__feature_score, self.__feature_score_type = utils.inter_quartile_skew(
                 self.feature
             )
+
+            # reduce feature skew
+            self.__transformer_name, self.__transformed_data = utils.reduce_skew(
+                self.feature
+            )
         else:
             # calculate skew towards the mode
             self.__feature_score = self.feature.value_counts(normalize=True).max()
