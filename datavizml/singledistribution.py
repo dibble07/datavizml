@@ -250,7 +250,7 @@ class SingleDistribution:
         if self.feature_is_numeric and not self.feature_is_bool:
             # calculate skew of median towards quartiles
             self.__feature_score, self.__feature_score_type = utils.inter_quartile_skew(
-                self.feature.dropna()
+                self.feature
             )
         else:
             # calculate skew towards the mode
