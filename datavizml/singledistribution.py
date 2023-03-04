@@ -15,10 +15,14 @@ class SingleDistribution:
     :type feature: pandas Series
     :param ax: Axes to plot on
     :type ax: matplotlib Axes
+    :param feature_deskew: reduce feature skew
+    :type feature_deskew: bool, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
     :param target_score: Precomputed score to avoid recalculation
     :type target_score: float, optional
+    :param target_rebalance: reduce class imbalance in target score
+    :type target_rebalance: bool, optional
     :param binning_threshold: Maximum number of distinct values in the column before binning, defaults to 12
     :type binning_threshold: int, optional
     """
@@ -32,6 +36,7 @@ class SingleDistribution:
         self,
         feature,
         ax,
+        feature_deskew=False,
         target=None,
         target_score=None,
         target_rebalance=False,
@@ -41,6 +46,7 @@ class SingleDistribution:
         # input variables
         self.ax_feature = ax
         self.feature = feature
+        self.feature_deskew = feature_deskew
         self.has_target = target is not None
         if self.has_target:
             self.target = target
@@ -252,11 +258,6 @@ class SingleDistribution:
             self.__feature_score, self.__feature_score_type = utils.inter_quartile_skew(
                 self.feature
             )
-
-            # reduce feature skew
-            self.__transformer_name, self.__transformed_data = utils.reduce_skew(
-                self.feature
-            )
         else:
             # calculate skew towards the mode
             self.__feature_score = self.feature.value_counts(normalize=True).max()
@@ -365,7 +366,13 @@ class SingleDistribution:
 
         else:
             # convert to series and set
-            self.__feature = utils.to_series(feature)
+            data = utils.to_series(feature)
+
+            # reduce feature skew
+            if self.feature_deskew:
+                self.__feature_transformer, self.__feature = utils.reduce_skew(data)
+            else:
+                self.__feature_transformer, self.__feature = None, data
 
     # target getter
     @property
