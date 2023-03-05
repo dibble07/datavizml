@@ -165,6 +165,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
                 "feature_dtype",
                 "feature_score",
                 "feature_score_type",
+                "feature_transform",
                 "feature_nunique",
                 "feature_missing_proportion",
                 "target_name",

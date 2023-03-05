@@ -149,9 +149,11 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
         target_analysis_type = "classification"
 
     # set expected feature score
+    expected_feature_transform = None
     if dtype_feature in ["Int64", "Float64"]:
         if feature_deskew:
             expected_feature_score = 0.021
+            expected_feature_transform = "boxcox"
         else:
             expected_feature_score = 0.139
     elif dtype_feature in ["string", "category"]:
@@ -205,6 +207,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
         if sd.feature_is_numeric and not sd.feature_is_bool
         else "Categorical skew"
     )
+    assert summary["feature_transform"] == expected_feature_transform
     assert summary["feature_nunique"] == 6 if dtype_feature != "boolean" else 3
     assert summary["feature_missing_proportion"] == 1 / 9
 
