@@ -45,8 +45,8 @@ class SingleDistribution:
         """Constructor method"""
         # input variables
         self.ax_feature = ax
-        self.feature = feature
         self.feature_deskew = feature_deskew
+        self.feature = feature
         self.has_target = target is not None
         if self.has_target:
             self.target = target
