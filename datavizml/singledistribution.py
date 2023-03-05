@@ -368,8 +368,10 @@ class SingleDistribution:
             # convert to series and set
             data = utils.to_series(feature)
 
+            is_bool, is_numeric, _ = utils.classify_type(data)
+
             # reduce feature skew
-            if self.feature_deskew:
+            if self.feature_deskew and (is_numeric and not is_bool):
                 self.__feature_transformer, self.__feature = utils.reduce_skew(data)
             else:
                 self.__feature_transformer, self.__feature = None, data
