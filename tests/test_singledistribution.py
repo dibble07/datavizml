@@ -79,6 +79,10 @@ def test_prescribed_score():
 
 
 @pytest.mark.parametrize(
+    "feature_deskew",
+    [True, False],
+)
+@pytest.mark.parametrize(
     "target_rebalance",
     [True, False],
 )
@@ -89,14 +93,14 @@ def test_prescribed_score():
 @pytest.mark.parametrize(
     "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
 )
-def test_combinations(dtype_feature, dtype_target, target_rebalance):
+def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_deskew):
     # initialise raw values - include a missing value and a modal value
     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
     # process raw x values based on type
     if dtype_feature == "Float64":
         # add small value to avoid being downcast to integer
-        x = [i + 0.01 if not np.isnan(i) else i for i in raw]
+        x = [i + 0.001 if not np.isnan(i) else i for i in raw]
     elif dtype_feature in ["string", "category"]:
         # category is a dtype only for pandas - start with string
         x = [str(i) if not np.isnan(i) else i for i in raw]
@@ -146,7 +150,10 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance):
 
     # set expected feature score
     if dtype_feature in ["Int64", "Float64"]:
-        expected_feature_score = 0.139
+        if feature_deskew:
+            expected_feature_score = 0.021
+        else:
+            expected_feature_score = 0.139
     elif dtype_feature in ["string", "category"]:
         expected_feature_score = 0.5
     elif dtype_feature in ["boolean"]:
@@ -163,18 +170,24 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance):
     sd = SingleDistribution(
         feature=x_final,
         ax=ax,
+        feature_deskew=feature_deskew,
         target=y_final,
         target_rebalance=target_rebalance,
     )
 
     # check printing
     captured = sd.__str__()
+    feature_str = (
+        "Float64"
+        if feature_deskew and dtype_feature in ["Int64", "Float64"]
+        else dtype_feature
+    )
     target_str = (
         dtype_target
         if dtype_target == "no target provided"
         else f"{y_name} ({dtype_target} - {target_analysis_type})"
     )
-    expected = f"feature: {x_name} ({dtype_feature}), target: {target_str}"
+    expected = f"feature: {x_name} ({feature_str}), target: {target_str}"
     assert expected == captured
 
     # call object
@@ -185,7 +198,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance):
 
     # check feature parameters
     assert summary["feature_name"] == x_name
-    assert summary["feature_dtype"] == dtype_feature
+    assert summary["feature_dtype"] == feature_str
     assert np.round(summary["feature_score"], 3) == expected_feature_score
     assert (
         summary["feature_score_type"] == "Inter-quartile skew"

@@ -58,7 +58,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
     # process raw x values based on type
     x = {
         "Int64": raw,
-        "Float64": [i + 0.01 if not np.isnan(i) else i for i in raw],
+        "Float64": [i + 0.001 if not np.isnan(i) else i for i in raw],
         "string": [str(i) if not np.isnan(i) else i for i in raw],
         "category": [str(i) if not np.isnan(i) else i for i in raw],
         "boolean": [i < 2.5 if not np.isnan(i) else i for i in raw],
