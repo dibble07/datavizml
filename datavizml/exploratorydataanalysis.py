@@ -13,6 +13,8 @@ class ExploratoryDataAnalysis:
     :type data: pandas Series of pandas DataFrame
     :param ncols: Number of columns to use in figure
     :type ncols: float, optional
+    :param data_deskew: reduce data skew
+    :type data_deskew: bool, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
     :param prediction_matrix_full: full or reduced prediction matrix
@@ -30,6 +32,7 @@ class ExploratoryDataAnalysis:
         self,
         data,
         ncols,
+        data_deskew=False,
         target=None,
         target_rebalance=False,
         prediction_matrix_full=False,
@@ -39,6 +42,7 @@ class ExploratoryDataAnalysis:
         """Constructor method"""
         # input variables
         self.data = data
+        self.data_deskew = data_deskew
         self.has_target = target is not None
         if self.has_target:
             self.target = target
@@ -187,6 +191,7 @@ class ExploratoryDataAnalysis:
                 sd.SingleDistribution(
                     feature=feature,
                     ax=ax,
+                    feature_deskew=self.data_deskew,
                     target=self.target if self.has_target else None,
                     target_score=self.prediction_matrix.pivot(
                         index="x", columns="y", values="ppscore"

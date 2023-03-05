@@ -15,10 +15,14 @@ class SingleDistribution:
     :type feature: pandas Series
     :param ax: Axes to plot on
     :type ax: matplotlib Axes
+    :param feature_deskew: reduce feature skew
+    :type feature_deskew: bool, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
     :param target_score: Precomputed score to avoid recalculation
     :type target_score: float, optional
+    :param target_rebalance: reduce class imbalance in target score
+    :type target_rebalance: bool, optional
     :param binning_threshold: Maximum number of distinct values in the column before binning, defaults to 12
     :type binning_threshold: int, optional
     """
@@ -32,6 +36,7 @@ class SingleDistribution:
         self,
         feature,
         ax,
+        feature_deskew=False,
         target=None,
         target_score=None,
         target_rebalance=False,
@@ -40,6 +45,7 @@ class SingleDistribution:
         """Constructor method"""
         # input variables
         self.ax_feature = ax
+        self.feature_deskew = feature_deskew
         self.feature = feature
         self.has_target = target is not None
         if self.has_target:
@@ -249,11 +255,9 @@ class SingleDistribution:
         """Calculate the score for the feature based on its skewness"""
         if self.feature_is_numeric and not self.feature_is_bool:
             # calculate skew of median towards quartiles
-            lower, median, upper = np.quantile(self.feature.dropna(), [0.25, 0.5, 0.75])
-            middle = (upper + lower) / 2
-            range_ = abs(upper - lower)
-            self.__feature_score = abs((median - middle)) / range_ / 2
-            self.__feature_score_type = "Inter-quartile skew"
+            self.__feature_score, self.__feature_score_type = utils.inter_quartile_skew(
+                self.feature
+            )
         else:
             # calculate skew towards the mode
             self.__feature_score = self.feature.value_counts(normalize=True).max()
@@ -338,6 +342,7 @@ class SingleDistribution:
             "feature_dtype": self.feature_dtype,
             "feature_score": self.feature_score,
             "feature_score_type": self.__feature_score_type,
+            "feature_transform": self.__feature_transform,
             "feature_nunique": self.feature_nunique,
             "feature_missing_proportion": self.missing_proportion,
             "target_name": self.target.name if self.has_target else None,
@@ -362,7 +367,15 @@ class SingleDistribution:
 
         else:
             # convert to series and set
-            self.__feature = utils.to_series(feature)
+            data = utils.to_series(feature)
+
+            is_bool, is_numeric, _ = utils.classify_type(data)
+
+            # reduce feature skew
+            if self.feature_deskew and (is_numeric and not is_bool):
+                self.__feature_transform, self.__feature = utils.reduce_skew(data)
+            else:
+                self.__feature_transform, self.__feature = None, data
 
     # target getter
     @property
