@@ -342,6 +342,7 @@ class SingleDistribution:
             "feature_dtype": self.feature_dtype,
             "feature_score": self.feature_score,
             "feature_score_type": self.__feature_score_type,
+            "feature_transform": self.__feature_transform,
             "feature_nunique": self.feature_nunique,
             "feature_missing_proportion": self.missing_proportion,
             "target_name": self.target.name if self.has_target else None,
@@ -372,9 +373,9 @@ class SingleDistribution:
 
             # reduce feature skew
             if self.feature_deskew and (is_numeric and not is_bool):
-                self.__feature_transformer, self.__feature = utils.reduce_skew(data)
+                self.__feature_transform, self.__feature = utils.reduce_skew(data)
             else:
-                self.__feature_transformer, self.__feature = None, data
+                self.__feature_transform, self.__feature = None, data
 
     # target getter
     @property
