@@ -101,6 +101,7 @@ def reduce_skew(data):
     # define transformers
     transformers = {
         "boxcox": lambda x: stats.boxcox(x)[0],
+        "yeojohnson": lambda x: stats.yeojohnson(x)[0],
         "square-root": np.sqrt,
         "square": np.square,
         "log-2": np.log2,
