@@ -13,7 +13,7 @@ class ExploratoryDataAnalysis:
     :type data: pandas Series of pandas DataFrame
     :param ncols: Number of columns to use in figure
     :type ncols: float, optional
-    :param data_deskew: reduce data skew
+    :param data_deskew: reduce data skew, trialling: Yeo-Johnson and exponent of base 2
     :type data_deskew: bool, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
