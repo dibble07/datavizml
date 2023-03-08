@@ -147,8 +147,10 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
 
         # check single distribution pps scores are correct
         for sd in eda.single_distributions:
-            if sd.has_target:
-                assert np.round(sd.target_score, 3) == expected_prediction_matrix(
+            if dtype_target != "no target provided":
+                assert np.round(
+                    sd.to_dict()["target_score"], 3
+                ) == expected_prediction_matrix(
                     sd.feature.name[2:],
                     sd.target.name[2:],
                     target_rebalance,
@@ -177,7 +179,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         assert summary.shape[0] == len(x_names)
 
         # check prediction matrix values
-        if not eda.has_target and not eda.prediction_matrix_full:
+        if not dtype_target != "no target provided" and not matrix_full:
             assert eda.prediction_matrix == None
         else:
             captured_prediction_matrix = eda.prediction_matrix.pivot(
@@ -188,14 +190,14 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
                     expected_val = expected_prediction_matrix(
                         row_name[2:],
                         col_name[2:],
-                        target_rebalance and eda.has_target,
+                        target_rebalance and dtype_target != "no target provided",
                         dtype_target,
                     )
                     assert expected_val == captured_val
 
         # checks prediction heatmap plotting
         fig, ax = plt.subplots()
-        if not eda.has_target and not eda.prediction_matrix_full:
+        if not dtype_target != "no target provided" and not matrix_full:
             with pytest.raises(TypeError):
                 eda.prediction_score_plot(ax=ax)
         else:

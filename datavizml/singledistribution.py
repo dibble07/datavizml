@@ -45,16 +45,16 @@ class SingleDistribution:
         """Constructor method"""
         # input variables
         self.ax_feature = ax
-        self.feature_deskew = feature_deskew
+        self.__feature_deskew = feature_deskew
         self.feature = feature
-        self.has_target = target is not None
-        if self.has_target:
+        self.__has_target = target is not None
+        if self.__has_target:
             self.target = target
             self.__target_rebalance = target_rebalance
             if self.feature.name == self.target.name:
                 # clear target if the same as feature
                 del self.__target
-                self.has_target = False
+                self.__has_target = False
         if isinstance(target_score, (int, float)):
             self.__target_score = target_score
             self.__target_score_type = "PPS"
@@ -62,14 +62,14 @@ class SingleDistribution:
             raise TypeError(
                 f"target_score is of {target_score.__class__.__name__} type which is not valid"
             )
-        self.binning_threshold = (
+        self.__binning_threshold = (
             binning_threshold
             if binning_threshold
             else SingleDistribution.BINNING_THRESHOLD_DEFAULT
         )
 
         # check input
-        if self.has_target:
+        if self.__has_target:
             if self.feature.shape[0] != self.target.shape[0]:
                 raise ValueError(
                     f"Dimension mismatch, feature has {self.feature.shape[0]} elements but the target has {self.target.shape[0]}"
@@ -77,28 +77,28 @@ class SingleDistribution:
 
         # classify inputs
         (
-            self.feature_is_bool,
-            self.feature_is_numeric,
-            self.feature_dtype,
+            self.__feature_is_bool,
+            self.__feature_is_numeric,
+            self.__feature_dtype,
         ) = utils.classify_type(self.feature)
-        if self.has_target:
+        if self.__has_target:
             (
-                self.target_is_bool,
-                self.target_is_numeric,
-                self.target_dtype,
+                self.__target_is_bool,
+                self.__target_is_numeric,
+                self.__target_dtype,
             ) = utils.classify_type(self.target)
-            if self.target_is_numeric and not self.target_is_bool:
-                self.target_type = "regression"
+            if self.__target_is_numeric and not self.__target_is_bool:
+                self.__target_type = "regression"
             else:
-                self.target_type = "classification"
+                self.__target_type = "classification"
 
         # supplementary/reusable variables
-        self.feature_nunique = self.feature.nunique(dropna=False)
+        self.__feature_nunique = self.feature.nunique(dropna=False)
         missing_proportion = self.feature.isna().value_counts(normalize=True)
         self.__missing_proportion = (
             missing_proportion[True] if True in missing_proportion.index else 0
         )
-        if self.has_target:
+        if self.__has_target:
             self.ax_target = self.ax_feature.twinx()
 
     def __str__(self):
@@ -110,13 +110,13 @@ class SingleDistribution:
 
         # conditional strings
         target_val = (
-            f"{self.target.name} ({self.target_dtype} - {self.target_type})"
-            if self.has_target
+            f"{self.target.name} ({self.__target_dtype} - {self.__target_type})"
+            if self.__has_target
             else "no target provided"
         )
 
         # attribute related strings
-        feature_str = f"feature: {self.feature.name} ({self.feature_dtype})"
+        feature_str = f"feature: {self.feature.name} ({self.__feature_dtype})"
         target_str = f"target: {target_val}"
 
         return ", ".join([feature_str, target_str])
@@ -141,15 +141,15 @@ class SingleDistribution:
         self.__cmap = matplotlib.colormaps[colourmap_target]
 
         # calculate target score
-        if not hasattr(self, "target_score"):
+        if not hasattr(self, "_SingleDistribution__target_score"):
             self.calculate_target_score()
 
         # calculate feature score
-        if not hasattr(self, "feature_score"):
+        if not hasattr(self, "_SingleDistribution__feature_score"):
             self.calculate_feature_score()
 
         # summarise feature
-        if not hasattr(self, "feature_summary"):
+        if not hasattr(self, "_SingleDistribution__feature_summary"):
             self.summarise_feature()
 
         # plot feature frequency
@@ -161,15 +161,15 @@ class SingleDistribution:
         baseline.set_color(colour_feature)
 
         # plot target values and uncertainty
-        if self.has_target:
+        if self.__has_target:
             # regression specific calculations
-            if self.target_type == "regression":
+            if self.__target_type == "regression":
                 z_crit = scipy.stats.norm.ppf(1 - ci_significance / 2)
                 ci_diff_all = {None: self.__feature_summary["std"] * z_crit}
                 y_plot_all = {None: self.__feature_summary["mean"]}
 
             # classification specific calculations
-            elif self.target_type == "classification":
+            elif self.__target_type == "classification":
                 # calculate values for each class
                 ci_diff_all = {}
                 y_plot_all = {}
@@ -189,7 +189,7 @@ class SingleDistribution:
                     y_plot_all[class_name] = mean * 100
 
                 # drop false class for boolean
-                if self.target_is_bool:
+                if self.__target_is_bool:
                     ci_diff_all.pop(False)
                     y_plot_all.pop(False)
 
@@ -215,7 +215,7 @@ class SingleDistribution:
 
         # decorate x axis
         self.ax_feature.set_xlabel(self.feature.name)
-        if self.feature_is_numeric and not self.feature_is_bool:
+        if self.__feature_is_numeric and not self.__feature_is_bool:
             _, ax_max = self.ax_feature.get_xlim()
             if ax_max > 1000:
                 self.ax_feature.xaxis.set_major_formatter(
@@ -229,31 +229,31 @@ class SingleDistribution:
         self.ax_feature.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}"))
 
         # decorate second y axis
-        if self.has_target:
+        if self.__has_target:
             twin_y_colour = (
                 "k"
-                if len(y_plot_all) > 1 and not self.target_is_bool
+                if len(y_plot_all) > 1 and not self.__target_is_bool
                 else colour_target
             )
             self.ax_target.set_ylabel(self.target.name, color=twin_y_colour)
             self.ax_target.tick_params(axis="y", labelcolor=twin_y_colour)
-            if self.target_type == "classification":
+            if self.__target_type == "classification":
                 self.ax_target.yaxis.set_major_formatter(ticker.PercentFormatter())
-                if not self.target_is_bool:
+                if not self.__target_is_bool:
                     self.ax_target.legend()
 
         # add title
-        if self.has_target:
-            score_type, score = self.__target_score_type, self.target_score
+        if self.__has_target:
+            score_type, score = self.__target_score_type, self.__target_score
         else:
-            score_type, score = self.__feature_score_type, self.feature_score
+            score_type, score = self.__feature_score_type, self.__feature_score
         self.ax_feature.set_title(
-            f"{score_type} = {score:.2f}\n({100*self.missing_proportion:.1f}% missing)"
+            f"{score_type} = {score:.2f}\n({100*self.__missing_proportion:.1f}% missing)"
         )
 
     def calculate_feature_score(self):
         """Calculate the score for the feature based on its skewness"""
-        if self.feature_is_numeric and not self.feature_is_bool:
+        if self.__feature_is_numeric and not self.__feature_is_bool:
             # calculate skew of median towards quartiles
             self.__feature_score, self.__feature_score_type = utils.inter_quartile_skew(
                 self.feature
@@ -265,9 +265,9 @@ class SingleDistribution:
 
     def calculate_target_score(self):
         """Calculate the score for the feature based on its predictive power"""
-        if self.has_target:
+        if self.__has_target:
             # rebalance classes
-            if self.target_type == "classification" and self.__target_rebalance:
+            if self.__target_type == "classification" and self.__target_rebalance:
                 x_balanced, y_balanced = utils.class_rebalance(
                     self.feature, self.target
                 )
@@ -291,30 +291,33 @@ class SingleDistribution:
     def summarise_feature(self):
         """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
         # join feature and target intro single dataframe
-        if self.has_target:
+        if self.__has_target:
             all_data = pd.concat([self.feature, self.target], axis=1)
         else:
             all_data = self.feature.to_frame()
 
         # bin target variable if there are too many distinct values
-        if self.feature_nunique > self.binning_threshold and self.feature_is_numeric:
+        if (
+            self.__feature_nunique > self.__binning_threshold
+            and self.__feature_is_numeric
+        ):
             bin_boundaries = np.linspace(
-                self.feature.min(), self.feature.max(), self.binning_threshold + 1
+                self.feature.min(), self.feature.max(), self.__binning_threshold + 1
             )
             all_data[self.feature.name] = pd.cut(self.feature, bin_boundaries).apply(
                 lambda x: x.mid
             )
 
         # calculate summary statistics for each distinct target variable
-        if self.has_target:
-            if self.target_type == "regression":
+        if self.__has_target:
+            if self.__target_type == "regression":
                 self.__feature_summary = all_data.groupby(self.feature.name).agg(
                     {"count", "mean", "std"}
                 )
                 self.__feature_summary.columns = (
                     self.__feature_summary.columns.droplevel()
                 )
-            elif self.target_type == "classification":
+            elif self.__target_type == "classification":
                 self.__feature_summary = pd.pivot_table(
                     all_data.value_counts().to_frame("count"),
                     values="count",
@@ -330,7 +333,7 @@ class SingleDistribution:
             )
 
         # convert index to string from boolean for printing purposes
-        if self.feature_is_bool:
+        if self.__feature_is_bool:
             self.__feature_summary.index = self.__feature_summary.index.map(
                 {True: "True", False: "False"}
             )
@@ -339,15 +342,15 @@ class SingleDistribution:
         "Summarise as a dictionary"
         summary = {
             "feature_name": self.feature.name,
-            "feature_dtype": self.feature_dtype,
-            "feature_score": self.feature_score,
+            "feature_dtype": self.__feature_dtype,
+            "feature_score": self.__feature_score,
             "feature_score_type": self.__feature_score_type,
             "feature_transform": self.__feature_transform,
-            "feature_nunique": self.feature_nunique,
-            "feature_missing_proportion": self.missing_proportion,
-            "target_name": self.target.name if self.has_target else None,
-            "target_dtype": self.target_dtype if self.has_target else None,
-            "target_score": self.target_score,
+            "feature_nunique": self.__feature_nunique,
+            "feature_missing_proportion": self.__missing_proportion,
+            "target_name": self.target.name if self.__has_target else None,
+            "target_dtype": self.__target_dtype if self.__has_target else None,
+            "target_score": self.__target_score,
             "target_score_type": self.__target_score_type,
         }
         return summary
@@ -372,7 +375,7 @@ class SingleDistribution:
             is_bool, is_numeric, _ = utils.classify_type(data)
 
             # reduce feature skew
-            if self.feature_deskew and (is_numeric and not is_bool):
+            if self.__feature_deskew and (is_numeric and not is_bool):
                 self.__feature_transform, self.__feature = utils.reduce_skew(data)
             else:
                 self.__feature_transform, self.__feature = None, data
@@ -386,28 +389,10 @@ class SingleDistribution:
     # target setter
     @target.setter
     def target(self, target):
-        if hasattr(self, "target") or not self.has_target:
+        if hasattr(self, "target") or not self.__has_target:
             # do not allow changing of data
             raise AttributeError("This attribute has already been set")
 
         else:
             # convert to series and set
             self.__target = utils.to_series(target)
-
-    # target score getter
-    @property
-    def target_score(self):
-        """The score value of the relationship to target"""
-        return self.__target_score
-
-    # feature score getter
-    @property
-    def feature_score(self):
-        """The score value of the feature distribution"""
-        return self.__feature_score
-
-    # missing proportion getter
-    @property
-    def missing_proportion(self):
-        """The proportion of values that are missing"""
-        return self.__missing_proportion
