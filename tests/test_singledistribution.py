@@ -21,7 +21,7 @@ def test_improper_inputs():
     # check target vs target
     sd = SingleDistribution(feature=y_series, ax=ax, target=y_series)
     sd()
-    assert np.isnan(sd.target_score)
+    assert np.isnan(sd.to_dict()["target_score"])
 
     # check large values use axis formatter
     sd = SingleDistribution(feature=x_series_long, ax=ax, target=y_series_long)
@@ -67,15 +67,10 @@ def test_prescribed_score():
 
     # initialise object
     sd = SingleDistribution(feature=x, ax=ax, target=y, target_score=0.1)
-
-    # check inability to reset values
-    with pytest.raises(AttributeError):
-        sd.feature_score = 0.2
-    with pytest.raises(AttributeError):
-        sd.target_score = 0.2
+    sd()
 
     # check target score value
-    assert sd.target_score == 0.1
+    assert sd.to_dict()["target_score"] == 0.1
 
 
 @pytest.mark.parametrize(
@@ -204,7 +199,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     assert np.round(summary["feature_score"], 3) == expected_feature_score
     assert (
         summary["feature_score_type"] == "Inter-quartile skew"
-        if sd.feature_is_numeric and not sd.feature_is_bool
+        if dtype_feature in ["Int64", "Float64"]
         else "Categorical skew"
     )
     assert summary["feature_transform"] == expected_feature_transform
@@ -212,7 +207,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     assert summary["feature_missing_proportion"] == 1 / 9
 
     # check target parameters
-    if sd.has_target:
+    if dtype_target != "no target provided":
         assert summary["target_name"] == y_name
         assert summary["target_dtype"] == dtype_target
         assert np.round(summary["target_score"], 3) == expected_target_score
