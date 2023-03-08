@@ -42,9 +42,9 @@ class ExploratoryDataAnalysis:
         """Constructor method"""
         # input variables
         self.data = data
-        self.data_deskew = data_deskew
-        self.has_target = target is not None
-        if self.has_target:
+        self.__data_deskew = data_deskew
+        self.__has_target = target is not None
+        if self.__has_target:
             self.target = target
             self.__target_rebalance = target_rebalance
         self.__ncols = ncols
@@ -56,22 +56,22 @@ class ExploratoryDataAnalysis:
         self.__nrows = -(-(self.data.shape[1]) // self.__ncols)
 
         # classify inputs
-        self.data_dtypes = set(
+        self.__data_dtypes = set(
             [utils.classify_type(x)[2] for _, x in self.data.items()]
         )
-        if self.has_target:
+        if self.__has_target:
             (
-                self.target_is_bool,
-                self.target_is_numeric,
-                self.target_dtype,
+                self.__target_is_bool,
+                self.__target_is_numeric,
+                self.__target_dtype,
             ) = utils.classify_type(self.target)
-            if self.target_is_numeric and not self.target_is_bool:
-                self.target_type = "regression"
+            if self.__target_is_numeric and not self.__target_is_bool:
+                self.__target_type = "regression"
             else:
-                self.target_type = "classification"
+                self.__target_type = "classification"
 
         # check input
-        if self.has_target:
+        if self.__has_target:
             if self.data.shape[0] != self.target.shape[0]:
                 raise ValueError(
                     f"Dimension mismatch, features have {self.data.shape[0]} elements but the target has {self.target.shape[0]}"
@@ -96,11 +96,11 @@ class ExploratoryDataAnalysis:
         # conditional strings
         feature_vals = (
             ", ".join(self.data.columns),
-            ", ".join(sorted([str(x) for x in self.data_dtypes])),
+            ", ".join(sorted([str(x) for x in self.__data_dtypes])),
         )
         target_val = (
-            f"{self.target.name} ({self.target_dtype})"
-            if self.has_target
+            f"{self.target.name} ({self.__target_dtype})"
+            if self.__has_target
             else "no target provided"
         )
 
@@ -150,9 +150,9 @@ class ExploratoryDataAnalysis:
     def __calculate_prediction_matrix(self):
         "Calculate prediction matrix for specified combinations of features/targets"
         # combine feature and target
-        if self.has_target:
+        if self.__has_target:
             # rebalance classes
-            if self.target_type == "classification" and self.__target_rebalance:
+            if self.__target_type == "classification" and self.__target_rebalance:
                 x_balanced, y_balanced = utils.class_rebalance(self.data, self.target)
                 df = pd.concat([x_balanced, y_balanced], axis=1)
             else:
@@ -170,7 +170,7 @@ class ExploratoryDataAnalysis:
             )
         else:
             # calculate reduced matrix
-            if self.has_target:
+            if self.__has_target:
                 self.__prediction_matrix = pps.predictors(
                     df=df,
                     y=self.target.name,
@@ -191,12 +191,12 @@ class ExploratoryDataAnalysis:
                 sd.SingleDistribution(
                     feature=feature,
                     ax=ax,
-                    feature_deskew=self.data_deskew,
-                    target=self.target if self.has_target else None,
+                    feature_deskew=self.__data_deskew,
+                    target=self.target if self.__has_target else None,
                     target_score=self.prediction_matrix.pivot(
                         index="x", columns="y", values="ppscore"
                     ).loc[feature.name, self.target.name]
-                    if self.has_target
+                    if self.__has_target
                     else None,
                 )
             )
@@ -271,7 +271,7 @@ class ExploratoryDataAnalysis:
     # target setter
     @target.setter
     def target(self, target):
-        if hasattr(self, "target") or not self.has_target:
+        if hasattr(self, "target") or not self.__has_target:
             # do not allow changing of data
             raise AttributeError("This attribute has already been set")
 
