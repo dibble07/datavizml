@@ -284,9 +284,3 @@ class ExploratoryDataAnalysis:
     def prediction_matrix(self):
         """The prediction matrix data"""
         return self.__prediction_matrix
-
-    # prediction matrix full getter
-    @property
-    def prediction_matrix_full(self):
-        """The prediction matrix complexity flag"""
-        return self.__prediction_matrix_full
