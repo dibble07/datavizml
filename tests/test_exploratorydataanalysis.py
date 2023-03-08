@@ -179,6 +179,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         assert summary.shape[0] == len(x_names)
 
         # check prediction matrix values
+        assert eda.prediction_matrix_full == matrix_full
         if not dtype_target != "no target provided" and not matrix_full:
             assert eda.prediction_matrix == None
         else:
