@@ -120,10 +120,16 @@ def reduce_skew(df):
     # evaluate all samples
     for name, trans in transformers.items():
         # calculate values for current transformer
-        temp_df = pd.Series(trans(df_pos), name=df.name)
-        temp_skew = abs(temp_df.skew())
+        if name == "exp-2":
+            # suppress overflow warning
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore")
+                temp_df = pd.Series(trans(df_pos), name=df.name)
+        else:
+            temp_df = pd.Series(trans(df_pos), name=df.name)
 
         # update if skew has been reduced
+        temp_skew = abs(temp_df.skew())
         if temp_skew < skew_:
             skew_ = temp_skew
             transformer_name = name
