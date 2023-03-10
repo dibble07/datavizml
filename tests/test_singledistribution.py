@@ -73,6 +73,22 @@ def test_prescribed_score():
     assert sd.to_dict()["target_score"] == 0.1
 
 
+def test_deskew_symmetrical():
+    # initialise inputs
+    _, ax = plt.subplots()
+    x = pd.Series(
+        [1, 1, 1, 1] * 4,
+        name="feature_test",
+    )
+
+    # initialise object
+    sd = SingleDistribution(feature=x, ax=ax, feature_deskew=True)
+    sd()
+
+    # check target score value
+    assert sd.to_dict()["feature_score"] == 0
+
+
 @pytest.mark.parametrize(
     "feature_deskew",
     [True, False],
