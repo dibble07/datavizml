@@ -84,19 +84,24 @@ def inter_quartile_skew(data):
     lower, median, upper = np.quantile(data.dropna(), [0.25, 0.5, 0.75])
     middle = (upper + lower) / 2
     range_ = abs(upper - lower)
-    feature_score = abs((median - middle)) / range_ / 2
+    if range_ != 0:
+        feature_score = abs((median - middle)) / range_ / 2
+    else:
+        feature_score = 0
     feature_score_type = "Inter-quartile skew"
 
     return feature_score, feature_score_type
 
 
 # reduce skew
-def reduce_skew(data):
+def reduce_skew(df):
     """A function to transform the data to reduce skew"""
     # make all data positive
-    min_ = min(data)
+    min_ = min(df)
     if min_ <= 0:
-        data = data - min_ + 0.001
+        df_pos = df - min_ + 0.001
+    else:
+        df_pos = df
 
     # define transformers
     transformers = {
@@ -105,20 +110,20 @@ def reduce_skew(data):
     }
 
     # initiate outputs and skew
-    skew_ = abs(data.skew())
+    skew_ = abs(df_pos.skew())
     transformer_name = None
-    transformed_data = None
+    transformed_df = df_pos
 
     # evaluate all samples
     for name, trans in transformers.items():
         # calculate values for current transformer
-        temp_data = pd.Series(trans(data), name=data.name)
-        temp_skew = abs(temp_data.skew())
+        temp_df = pd.Series(trans(df_pos), name=df.name)
+        temp_skew = abs(temp_df.skew())
 
         # update if skew has been reduced
         if temp_skew < skew_:
             skew_ = temp_skew
             transformer_name = name
-            transformed_data = temp_data
+            transformed_df = temp_df
 
-    return transformer_name, transformed_data
+    return transformer_name, transformed_df
