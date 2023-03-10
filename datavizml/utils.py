@@ -105,8 +105,11 @@ def reduce_skew(df):
 
     # define transformers
     transformers = {
-        "yeojohnson": lambda x: stats.yeojohnson(x)[0],
+        "square": np.square,
+        "square-root": np.sqrt,
+        "log-2": np.log2,
         "exp-2": np.exp2,
+        "yeojohnson": lambda x: stats.yeojohnson(x)[0],
     }
 
     # initiate outputs and skew
