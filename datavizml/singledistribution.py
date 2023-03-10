@@ -15,7 +15,7 @@ class SingleDistribution:
     :type feature: pandas Series
     :param ax: Axes to plot on
     :type ax: matplotlib Axes
-    :param feature_deskew: reduce feature skew, trialling: Yeo-Johnson and exponent of base 2
+    :param feature_deskew: reduce feature skew, trialling: squaring, rooting, logging, exponents and Yeo-Johnson
     :type feature_deskew: bool, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
