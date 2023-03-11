@@ -254,8 +254,8 @@ class SingleDistribution:
     def calculate_feature_score(self):
         """Calculate the score for the feature based on its skewness"""
         if self.__feature_is_numeric and not self.__feature_is_bool:
-            # calculate skew of median towards quartiles
-            self.__feature_score, self.__feature_score_type = utils.inter_quartile_skew(
+            # calculate skew of median towards deciles
+            self.__feature_score, self.__feature_score_type = utils.inter_decile_skew(
                 self.feature
             )
         else:
