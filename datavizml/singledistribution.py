@@ -216,11 +216,33 @@ class SingleDistribution:
         # decorate x axis
         self.ax_feature.set_xlabel(self.feature.name)
         if self.__feature_is_numeric and not self.__feature_is_bool:
-            _, ax_max = self.ax_feature.get_xlim()
-            if ax_max > 1000:
+            # decorate depending on transform
+            self.ax_feature.xaxis.set_minor_locator(ticker.MaxNLocator(integer=True))
+            self.ax_feature.xaxis.set_major_locator(ticker.MaxNLocator(5, integer=True))
+            if self.__feature_transform is None:
+                _, ax_max = self.ax_feature.get_xlim()
+                if ax_max > 1000:
+                    self.ax_feature.xaxis.set_major_formatter(
+                        ticker.StrMethodFormatter("{x:,.0f}")
+                    )
+            elif self.__feature_transform == "square":
                 self.ax_feature.xaxis.set_major_formatter(
-                    ticker.StrMethodFormatter("{x:,.0f}")
+                    ticker.StrMethodFormatter("$\sqrt{{{x:.0f}}}$")
                 )
+            elif self.__feature_transform == "square-root":
+                self.ax_feature.xaxis.set_major_formatter(
+                    ticker.StrMethodFormatter("${{{x:.0f}}}^2$")
+                )
+            elif self.__feature_transform == "log-2":
+                self.ax_feature.xaxis.set_major_formatter(
+                    ticker.StrMethodFormatter("$2^{{{x:.0f}}}$")
+                )
+            elif self.__feature_transform == "exp-2":
+                self.ax_feature.xaxis.set_major_formatter(
+                    ticker.StrMethodFormatter("$\log_2{{{x:.0f}}}$")
+                )
+            elif self.__feature_transform == "yeojohnson":
+                self.ax_feature.xaxis.set_ticklabels([])
         else:
             self.ax_feature.tick_params(axis="x", labelrotation=90)
 
