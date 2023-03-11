@@ -163,10 +163,10 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     expected_feature_transform = None
     if dtype_feature in ["Int64", "Float64"]:
         if feature_deskew:
-            expected_feature_score = 0.036
+            expected_feature_score = 0.151
             expected_feature_transform = "yeojohnson"
         else:
-            expected_feature_score = 0.139
+            expected_feature_score = 0.750
     elif dtype_feature in ["string", "category"]:
         expected_feature_score = 0.5
     elif dtype_feature in ["boolean"]:
@@ -214,7 +214,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     assert summary["feature_dtype"] == feature_str
     assert np.round(summary["feature_score"], 3) == expected_feature_score
     assert (
-        summary["feature_score_type"] == "Inter-quartile skew"
+        summary["feature_score_type"] == "Inter-decile skew"
         if dtype_feature in ["Int64", "Float64"]
         else "Categorical skew"
     )

@@ -77,18 +77,18 @@ def class_rebalance(x, y):
     return x_balanced, y_balanced
 
 
-# inter-quartile skew
-def inter_quartile_skew(data):
-    """A function to calculate inter-quartile skew"""
+# inter-decile skew
+def inter_decile_skew(data):
+    """A function to calculate inter-decile skew"""
 
-    lower, median, upper = np.quantile(data.dropna(), [0.25, 0.5, 0.75])
+    lower, median, upper = np.quantile(data.dropna(), [0.1, 0.5, 0.9])
     middle = (upper + lower) / 2
     range_ = abs(upper - lower)
     if range_ != 0:
-        feature_score = abs((median - middle)) / range_ / 2
+        feature_score = abs((median - middle)) / (range_ / 2)
     else:
         feature_score = 0
-    feature_score_type = "Inter-quartile skew"
+    feature_score_type = "Inter-decile skew"
 
     return feature_score, feature_score_type
 
