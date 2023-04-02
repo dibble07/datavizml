@@ -1,7 +1,8 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 from scipy import stats
-import warnings
 
 
 # convert to series

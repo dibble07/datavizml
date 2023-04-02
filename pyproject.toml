@@ -35,3 +35,6 @@ dynamic = ["version"]
 
 [tool.setuptools.packages.find]
 include = ["datavizml*"]
+
+[tool.isort]
+profile = "black"

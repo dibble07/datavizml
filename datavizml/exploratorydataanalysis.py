@@ -1,9 +1,11 @@
-from datavizml import singledistribution as sd, utils
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import ppscore as pps
 import seaborn as sns
+from matplotlib import pyplot as plt
+
+from datavizml import singledistribution as sd
+from datavizml import utils
 
 
 class ExploratoryDataAnalysis:

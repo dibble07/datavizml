@@ -1,10 +1,11 @@
 import matplotlib
-from matplotlib import ticker
 import numpy as np
 import pandas as pd
 import ppscore as pps
 import scipy
+from matplotlib import ticker
 from statsmodels.stats.proportion import proportion_confint
+
 from datavizml import utils
 
 

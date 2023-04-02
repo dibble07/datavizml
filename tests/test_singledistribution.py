@@ -1,9 +1,10 @@
-from datavizml.singledistribution import SingleDistribution
-from tests.utils import expected_prediction_matrix
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import pytest
+
+from datavizml.singledistribution import SingleDistribution
+from tests.utils import expected_prediction_matrix
 
 np.random.seed(42)
 

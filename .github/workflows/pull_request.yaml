@@ -23,8 +23,12 @@ jobs:
       - name: Check formatting
         uses: psf/black@stable
         with:
-          options: "--check --diff --color"
+          options: "--check"
           jupyter: true
+      - name: Check import order
+        uses: isort/isort-action@master
+        with:
+            configuration: "--check"
       - name: Test with pytest
         run: |
           pytest
