@@ -23,7 +23,7 @@ jobs:
       - name: Check formatting
         uses: psf/black@stable
         with:
-          options: "--check --diff --color"
+          options: "--check"
           jupyter: true
       - name: Test with pytest
         run: |
