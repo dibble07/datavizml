@@ -29,6 +29,8 @@ jobs:
         uses: isort/isort-action@master
         with:
             configuration: "--check"
+      - name: Check types
+        uses: jpetrucciani/mypy-check@master
       - name: Test with pytest
         run: |
           pytest
