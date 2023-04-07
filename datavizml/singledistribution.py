@@ -1,3 +1,5 @@
+from typing import Any, Dict, Optional, Union
+
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -35,14 +37,14 @@ class SingleDistribution:
 
     def __init__(
         self,
-        feature,
-        ax,
-        feature_deskew=False,
-        target=None,
-        target_score=None,
-        target_rebalance=False,
-        binning_threshold=None,
-    ):
+        feature: Any,
+        ax: matplotlib.axes.Axes,
+        feature_deskew: bool = False,
+        target: Optional[Any] = None,
+        target_score: Optional[float] = None,
+        target_rebalance: bool = False,
+        binning_threshold: Optional[int] = None,
+    ) -> None:
         """Constructor method"""
         # input variables
         self.ax_feature = ax
@@ -102,7 +104,7 @@ class SingleDistribution:
         if self.__has_target:
             self.ax_target = self.ax_feature.twinx()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns a string representation of the instance
 
         :return: A string containing the feature and target name and their data types
@@ -124,10 +126,10 @@ class SingleDistribution:
 
     def __call__(
         self,
-        ci_significance=CI_SIGNIFICANCE_DEFAULT,
-        colour_feature=COLOUR_FEATURE_DEFAULT,
-        colourmap_target=COLOURMAP_TARGET_DEFAULT,
-    ):
+        ci_significance: float = CI_SIGNIFICANCE_DEFAULT,
+        colour_feature: str = COLOUR_FEATURE_DEFAULT,
+        colourmap_target: str = COLOURMAP_TARGET_DEFAULT,
+    ) -> None:
         """Generates and decorates the plot
 
         : param ci_significance: Significance level for the target confidence interval calculation, defaults to 0.05
@@ -163,6 +165,8 @@ class SingleDistribution:
 
         # plot target values and uncertainty
         if self.__has_target:
+            ci_diff_all: Dict[Any, Any]
+            y_plot_all: Dict[Any, Any]
             # regression specific calculations
             if self.__target_type == "regression":
                 z_crit = scipy.stats.norm.ppf(1 - ci_significance / 2)
@@ -191,8 +195,8 @@ class SingleDistribution:
 
                 # drop false class for boolean
                 if self.__target_is_bool:
-                    ci_diff_all.pop(False)
-                    y_plot_all.pop(False)
+                    del ci_diff_all[False]
+                    del y_plot_all[False]
 
             # plot errorbars
             for (class_name, ci_diff), (_, y_plot), colour_target in zip(
@@ -274,8 +278,10 @@ class SingleDistribution:
             f"{score_type} = {score:.2f}\n({100*self.__missing_proportion:.1f}% missing)"
         )
 
-    def calculate_feature_score(self):
+    def calculate_feature_score(self) -> None:
         """Calculate the score for the feature based on its skewness"""
+        self.__feature_score: pd.DataFrame
+        self.__feature_score_type: Union[None, str]
         if self.__feature_is_numeric and not self.__feature_is_bool:
             # calculate skew of median towards deciles
             self.__feature_score, self.__feature_score_type = utils.inter_decile_skew(
@@ -286,7 +292,7 @@ class SingleDistribution:
             self.__feature_score = self.feature.value_counts(normalize=True).max()
             self.__feature_score_type = "Categorical skew"
 
-    def calculate_target_score(self):
+    def calculate_target_score(self) -> None:
         """Calculate the score for the feature based on its predictive power"""
         if self.__has_target:
             # rebalance classes
@@ -311,7 +317,7 @@ class SingleDistribution:
             self.__target_score = np.nan
             self.__target_score_type = "N/A"
 
-    def summarise_feature(self):
+    def summarise_feature(self) -> None:
         """Summarise the feature by calculating summary statistics for each distinct value and binning if there are too many distinct values"""
         # join feature and target intro single dataframe
         if self.__has_target:
@@ -334,9 +340,9 @@ class SingleDistribution:
         # calculate summary statistics for each distinct target variable
         if self.__has_target:
             if self.__target_type == "regression":
-                self.__feature_summary = all_data.groupby(self.feature.name).agg(
-                    {"count", "mean", "std"}
-                )
+                self.__feature_summary: pd.DataFrame = all_data.groupby(
+                    self.feature.name
+                ).agg({"count", "mean", "std"})
                 self.__feature_summary.columns = (
                     self.__feature_summary.columns.droplevel()
                 )
@@ -361,7 +367,7 @@ class SingleDistribution:
                 {True: "True", False: "False"}
             )
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         "Summarise as a dictionary"
         summary = {
             "feature_name": self.feature.name,
@@ -380,13 +386,13 @@ class SingleDistribution:
 
     # feature getter
     @property
-    def feature(self):
+    def feature(self) -> pd.Series:
         """The feature data"""
         return self.__feature
 
     # feature setter
     @feature.setter
-    def feature(self, feature):
+    def feature(self, feature: Any) -> None:
         if hasattr(self, "feature"):
             # do not allow changing of data
             raise AttributeError("This attribute has already been set")
@@ -405,13 +411,14 @@ class SingleDistribution:
 
     # target getter
     @property
-    def target(self):
+    def target(self) -> pd.Series:
         """The target data"""
+        self.__target: pd.Series
         return self.__target
 
     # target setter
     @target.setter
-    def target(self, target):
+    def target(self, target: Any) -> None:
         if hasattr(self, "target") or not self.__has_target:
             # do not allow changing of data
             raise AttributeError("This attribute has already been set")

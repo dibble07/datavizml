@@ -1,4 +1,6 @@
 # set expected prediction matrix
+from typing import List, Union
+
 import pandas as pd
 
 expected_prediction_matrix_raw = pd.DataFrame(
@@ -38,7 +40,12 @@ expected_prediction_matrix_balanced_binary = pd.DataFrame(
 )
 
 
-def expected_prediction_matrix(row, col, target_rebalance, type_):
+def expected_prediction_matrix(
+    row: Union[str, List[str]],
+    col: Union[str, List[str]],
+    target_rebalance: bool,
+    type_: bool,
+) -> pd.DataFrame:
     if not target_rebalance or type_ in ["Int64", "Float64"]:
         return expected_prediction_matrix_raw.loc[row, col]
     elif type_ in ["string", "category"]:

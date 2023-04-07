@@ -1,3 +1,6 @@
+from typing import Any, Dict, Optional, Union
+
+import matplotlib
 import numpy as np
 import pandas as pd
 import ppscore as pps
@@ -32,15 +35,15 @@ class ExploratoryDataAnalysis:
 
     def __init__(
         self,
-        data,
-        ncols,
-        data_deskew=False,
-        target=None,
-        target_rebalance=False,
-        prediction_matrix_full=False,
-        figure_width=FIGURE_WIDTH,
-        axes_height=AXES_HEIGHT,
-    ):
+        data: Any,
+        ncols: int,
+        data_deskew: bool = False,
+        target: Optional[Any] = None,
+        target_rebalance: bool = False,
+        prediction_matrix_full: bool = False,
+        figure_width: Union[int, float] = FIGURE_WIDTH,
+        axes_height: Union[int, float] = AXES_HEIGHT,
+    ) -> None:
         """Constructor method"""
         # input variables
         self.data = data
@@ -88,7 +91,7 @@ class ExploratoryDataAnalysis:
         # initialise figure and axes
         self.__init_single_distributions()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns a string representation of the instance
 
         :return: A string containing: feature name and data type; target name and data type; and relationship score if available
@@ -112,7 +115,7 @@ class ExploratoryDataAnalysis:
 
         return "\n".join([feature_str, target_str])
 
-    def __getitem__(self, ind):
+    def __getitem__(self, ind: int) -> sd.SingleDistribution:
         """Get the distribution plot at the given index
 
         :param ind: The index of the distribution plot to retrieve
@@ -123,20 +126,20 @@ class ExploratoryDataAnalysis:
         """
         return self.single_distributions[ind]
 
-    def __call__(self):
+    def __call__(self) -> matplotlib.figure.Figure:
         """Generates and decorates the plots for each feature
 
         :return: A figure with the plots for each feature
         :rtype: matplotlib.figure.Figure
         """
         # call the plot for each object
-        for plot in self:
+        for plot in self:  # type: ignore
             plot()
 
         return self.fig
 
     # initialise figure
-    def __init_figure(self):
+    def __init_figure(self) -> None:
         """Initialise a figure with the required size and axes for the exploratory data analysis"""
         # create figure of required size with the required axes
         figsize = (self.__figure_width, self.__axes_height * self.__nrows)
@@ -145,11 +148,11 @@ class ExploratoryDataAnalysis:
         )
 
         # assign to object
-        self.fig = fig
+        self.fig: matplotlib.figure.Figure = fig
         self.ax = ax
 
     # calculate prediction matrix
-    def __calculate_prediction_matrix(self):
+    def __calculate_prediction_matrix(self) -> None:
         "Calculate prediction matrix for specified combinations of features/targets"
         # combine feature and target
         if self.__has_target:
@@ -184,7 +187,7 @@ class ExploratoryDataAnalysis:
                 self.__prediction_matrix = None
 
     # initialise distribution plot
-    def __init_single_distributions(self):
+    def __init_single_distributions(self) -> None:
         """Initialise a single distribution object for each feature"""
         # initialise all single distribution objects
         self.single_distributions = []
@@ -204,7 +207,7 @@ class ExploratoryDataAnalysis:
             )
 
     # create summary dataframe
-    def summary(self):
+    def summary(self) -> pd.DataFrame:
         """Summarise analysis
 
         :return: A dataframe summarising each of the features and their relationship to the target
@@ -214,7 +217,7 @@ class ExploratoryDataAnalysis:
         return pd.DataFrame(data=data)
 
     # create prediction power plot
-    def prediction_score_plot(self, ax):
+    def prediction_score_plot(self, ax: matplotlib.axes.Axes) -> matplotlib.axes.Axes:
         """Plot the prediction scores as a heatmap
 
         :param ax: Axes to plot on
@@ -249,13 +252,13 @@ class ExploratoryDataAnalysis:
 
     # data getter
     @property
-    def data(self):
+    def data(self) -> Union[pd.Series, pd.DataFrame]:
         """The feature data"""
         return self.__data
 
     # data setter
     @data.setter
-    def data(self, data):
+    def data(self, data: Any) -> None:
         if hasattr(self, "data"):
             # do not allow changing of data
             raise AttributeError("This attribute has already been set")
@@ -266,13 +269,14 @@ class ExploratoryDataAnalysis:
 
     # target getter
     @property
-    def target(self):
+    def target(self) -> pd.Series:
         """The target data"""
+        self.__target: pd.Series
         return self.__target
 
     # target setter
     @target.setter
-    def target(self, target):
+    def target(self, target: Any) -> None:
         if hasattr(self, "target") or not self.__has_target:
             # do not allow changing of data
             raise AttributeError("This attribute has already been set")
@@ -283,6 +287,6 @@ class ExploratoryDataAnalysis:
 
     # prediction matrix getter
     @property
-    def prediction_matrix(self):
+    def prediction_matrix(self) -> pd.DataFrame:
         """The prediction matrix data"""
         return self.__prediction_matrix

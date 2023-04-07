@@ -1,4 +1,5 @@
 import warnings
+from typing import Any, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -6,7 +7,7 @@ from scipy import stats
 
 
 # convert to series
-def to_series(input):
+def to_series(input: Any) -> pd.Series:
     """A function to check inputs are a pandas series"""
     # convert array to series
     if isinstance(input, pd.Series):
@@ -18,7 +19,7 @@ def to_series(input):
 
 
 # convert to frame
-def to_frame(input):
+def to_frame(input) -> pd.DataFrame:
     """A function to convert inputs into a pandas dataframe"""
     # convert array to frame
     if isinstance(input, pd.DataFrame):
@@ -32,7 +33,7 @@ def to_frame(input):
 
 
 # classify type of data
-def classify_type(input):
+def classify_type(input) -> Tuple[bool, bool, Any]:
     """A function to classify pandas series"""
     # drop null values
     no_null = input.dropna().convert_dtypes()
@@ -42,7 +43,9 @@ def classify_type(input):
 
 
 # rebalance classes
-def class_rebalance(x, y):
+def class_rebalance(
+    x: pd.DataFrame, y: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """A function to reduce class imbalance"""
 
     # combine into one dataset
@@ -79,7 +82,7 @@ def class_rebalance(x, y):
 
 
 # inter-decile skew
-def inter_decile_skew(data):
+def inter_decile_skew(data: pd.DataFrame) -> Tuple[float, str]:
     """A function to calculate inter-decile skew"""
 
     lower, median, upper = np.quantile(data.dropna(), [0.1, 0.5, 0.9])
@@ -95,7 +98,7 @@ def inter_decile_skew(data):
 
 
 # reduce skew
-def reduce_skew(df):
+def reduce_skew(df: pd.DataFrame) -> Tuple[Union[None, str], pd.DataFrame]:
     """A function to transform the data to reduce skew"""
     # make all data positive
     min_ = min(df)
@@ -125,9 +128,9 @@ def reduce_skew(df):
             # suppress overflow warning
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore")
-                temp_df = pd.Series(trans(df_pos), name=df.name)
+                temp_df = pd.Series(trans(df_pos), name=df.name)  # type: ignore
         else:
-            temp_df = pd.Series(trans(df_pos), name=df.name)
+            temp_df = pd.Series(trans(df_pos), name=df.name)  # type: ignore
 
         # update if skew has been reduced
         temp_skew = abs(temp_df.skew())
