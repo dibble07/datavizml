@@ -1,14 +1,12 @@
-from typing import Any, Dict, Optional, Union
-
 import matplotlib
 import numpy as np
-import pandas as pd
-import ppscore as pps
-import seaborn as sns
-from matplotlib import pyplot as plt
-
 from datavizml import singledistribution as sd
 from datavizml import utils
+from typing import Any, Dict, Optional, Union
+import pandas as pd
+from matplotlib import pyplot as plt
+import ppscore as pps
+import seaborn as sns
 
 
 class ExploratoryDataAnalysis:
@@ -133,7 +131,7 @@ class ExploratoryDataAnalysis:
         :rtype: matplotlib.figure.Figure
         """
         # call the plot for each object
-        for plot in self:  # type: ignore
+        for plot in self:
             plot()
 
         return self.fig
