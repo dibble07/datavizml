@@ -133,7 +133,7 @@ class ExploratoryDataAnalysis:
         :rtype: matplotlib.figure.Figure
         """
         # call the plot for each object
-        for plot in self:
+        for plot in self:  # type: ignore
             plot()
 
         return self.fig
