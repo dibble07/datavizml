@@ -249,7 +249,10 @@ class SingleDistribution:
             elif self.__feature_transform == "yeojohnson":
                 self.ax_feature.xaxis.set_ticklabels([])
         else:
-            self.ax_feature.tick_params(axis="x", labelrotation=90)
+            if self.__feature_nunique > self.__binning_threshold:
+                self.ax_feature.set_xticklabels([])
+            else:
+                self.ax_feature.tick_params(axis="x", labelrotation=90)
 
         # decorate first y axis
         self.ax_feature.set_ylabel("Frequency")
