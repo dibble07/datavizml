@@ -18,15 +18,17 @@ class ExploratoryDataAnalysis:
     :type data: pandas Series of pandas DataFrame
     :param ncols: Number of columns to use in figure
     :type ncols: float, optional
-    :param data_deskew: reduce data skew, trialling: squaring, rooting, logging, exponents and Yeo-Johnson
+    :param data_deskew: Reduce data skew, trialling: squaring, rooting, logging, exponents and Yeo-Johnson
     :type data_deskew: bool, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
-    :param prediction_matrix_full: full or reduced prediction matrix
-    :type prediction_matrix_full: boolean, optional
-    :param figure_width: width of figure
+    :param target_rebalance: Rebalance target
+    :type target_rebalance: bool, optional
+    :param prediction_matrix_full: Full or reduced prediction matrix
+    :type prediction_matrix_full: bool, optional
+    :param figure_width: Width of figure
     :type figure_width: int, optional
-    :param axes_height: height of axes
+    :param axes_height: Height of axes
     :type axes_height: int, optional
     """
 
