@@ -38,7 +38,7 @@ class SingleDistribution:
     def __init__(
         self,
         feature: Any,
-        ax: matplotlib.axes.Axes,
+        ax: Any,
         feature_deskew: bool = False,
         target: Optional[Any] = None,
         target_score: Optional[float] = None,
