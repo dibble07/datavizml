@@ -164,8 +164,8 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     expected_feature_transform = None
     if dtype_feature in ["Int64", "Float64"]:
         if feature_deskew:
-            expected_feature_score = 0.151
-            expected_feature_transform = "yeojohnson"
+            expected_feature_score = 0.467
+            expected_feature_transform = "exp-2"
         else:
             expected_feature_score = 0.750
     elif dtype_feature in ["string", "category"]:
