@@ -200,11 +200,13 @@ class ExploratoryDataAnalysis:
                     ax=ax,
                     feature_deskew=self.__data_deskew,
                     target=self.target if self.__has_target else None,
-                    target_score=self.prediction_matrix.pivot(
-                        index="x", columns="y", values="ppscore"
-                    ).loc[feature.name, self.target.name]
-                    if self.__has_target
-                    else None,
+                    target_score=(
+                        self.prediction_matrix.pivot(
+                            index="x", columns="y", values="ppscore"
+                        ).loc[feature.name, self.target.name]
+                        if self.__has_target
+                        else None
+                    ),
                 )
             )
 

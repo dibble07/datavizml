@@ -103,9 +103,10 @@ def reduce_skew(df: pd.DataFrame) -> Tuple[Union[None, str], pd.DataFrame]:
     # make all data positive
     min_ = min(df)
     if min_ <= 0:
-        df_pos = df - min_ + 0.001
+        df_pos_nan = df - min_ + 0.001
     else:
-        df_pos = df
+        df_pos_nan = df
+    df_pos = df_pos_nan.dropna()
 
     # define transformers
     transformers = {
@@ -128,15 +129,16 @@ def reduce_skew(df: pd.DataFrame) -> Tuple[Union[None, str], pd.DataFrame]:
             # suppress overflow warning
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore")
-                temp_df = pd.Series(trans(df_pos), name=df.name)  # type: ignore
+                temp_df = pd.Series(trans(df_pos), name=df.name, index=df_pos.index)  # type: ignore
         else:
-            temp_df = pd.Series(trans(df_pos), name=df.name)  # type: ignore
+            temp_df = pd.Series(trans(df_pos), name=df.name, index=df_pos.index)  # type: ignore
 
         # update if skew has been reduced
         temp_skew = abs(temp_df.skew())
         if temp_skew < skew_:
             skew_ = temp_skew
             transformer_name = name
-            transformed_df = temp_df
+            transformed_df = df_pos_nan.copy()
+            transformed_df[temp_df.index] = temp_df
 
     return transformer_name, transformed_df
