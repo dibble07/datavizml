@@ -129,7 +129,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# custom user files
-.pre-commit-config.yaml
-requirements_custom.txt

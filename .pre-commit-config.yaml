@@ -1,0 +1,13 @@
+repos:
+- repo: https://github.com/psf/black
+  rev: 22.10.0
+  hooks:
+  - id: black-jupyter
+# - repo: local
+#   hooks:
+#   - id: pytest
+#     name: pytest
+#     entry: env/bin/pytest
+#     language: script
+#     pass_filenames: false
+#     always_run: true
