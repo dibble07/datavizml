@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Optional, Union
 
 import matplotlib
@@ -6,6 +7,7 @@ import pandas as pd
 import ppscore as pps
 import scipy
 from matplotlib import ticker
+from matplotlib import dates
 from statsmodels.stats.proportion import proportion_confint
 
 from datavizml import utils
@@ -82,12 +84,14 @@ class SingleDistribution:
         (
             self.__feature_is_bool,
             self.__feature_is_numeric,
+            self.__feature_is_datetime,
             self.__feature_dtype,
         ) = utils.classify_type(self.feature)
         if self.__has_target:
             (
                 self.__target_is_bool,
                 self.__target_is_numeric,
+                _,
                 self.__target_dtype,
             ) = utils.classify_type(self.target)
             if self.__target_is_numeric and not self.__target_is_bool:
@@ -221,33 +225,37 @@ class SingleDistribution:
         # decorate x axis
         self.ax_feature.set_xlabel(self.feature.name)
         if self.__feature_is_numeric and not self.__feature_is_bool:
-            # decorate depending on transform
             self.ax_feature.xaxis.set_minor_locator(ticker.MaxNLocator(integer=True))
             self.ax_feature.xaxis.set_major_locator(ticker.MaxNLocator(5, integer=True))
-            if self.__feature_transform is None:
-                _, ax_max = self.ax_feature.get_xlim()
-                if ax_max > 1000:
+            if not self.__feature_is_datetime:
+                # decorate depending on transform
+                if self.__feature_transform is None:
+                    _, ax_max = self.ax_feature.get_xlim()
+                    if ax_max > 1000:
+                        self.ax_feature.xaxis.set_major_formatter(
+                            ticker.StrMethodFormatter("{x:,.0f}")
+                        )
+                elif self.__feature_transform == "square":
                     self.ax_feature.xaxis.set_major_formatter(
-                        ticker.StrMethodFormatter("{x:,.0f}")
+                        ticker.StrMethodFormatter("$\sqrt{{{x:.0f}}}$")
                     )
-            elif self.__feature_transform == "square":
-                self.ax_feature.xaxis.set_major_formatter(
-                    ticker.StrMethodFormatter("$\sqrt{{{x:.0f}}}$")
-                )
-            elif self.__feature_transform == "square-root":
-                self.ax_feature.xaxis.set_major_formatter(
-                    ticker.StrMethodFormatter("${{{x:.0f}}}^2$")
-                )
-            elif self.__feature_transform == "log-2":
-                self.ax_feature.xaxis.set_major_formatter(
-                    ticker.StrMethodFormatter("$2^{{{x:.0f}}}$")
-                )
-            elif self.__feature_transform == "exp-2":
-                self.ax_feature.xaxis.set_major_formatter(
-                    ticker.StrMethodFormatter("$\log_2{{{x:.0f}}}$")
-                )
-            elif self.__feature_transform == "yeojohnson":
-                self.ax_feature.xaxis.set_ticklabels([])
+                elif self.__feature_transform == "square-root":
+                    self.ax_feature.xaxis.set_major_formatter(
+                        ticker.StrMethodFormatter("${{{x:.0f}}}^2$")
+                    )
+                elif self.__feature_transform == "log-2":
+                    self.ax_feature.xaxis.set_major_formatter(
+                        ticker.StrMethodFormatter("$2^{{{x:.0f}}}$")
+                    )
+                elif self.__feature_transform == "exp-2":
+                    self.ax_feature.xaxis.set_major_formatter(
+                        ticker.StrMethodFormatter("$\log_2{{{x:.0f}}}$")
+                    )
+                elif self.__feature_transform == "yeojohnson":
+                    self.ax_feature.xaxis.set_ticklabels([])
+        elif self.__feature_is_datetime:
+            self.ax_feature.xaxis.set_minor_locator(dates.AutoDateLocator())
+            self.ax_feature.xaxis.set_major_locator(dates.AutoDateLocator(maxticks=5))
         else:
             if self.__feature_nunique > self.__binning_threshold:
                 self.ax_feature.set_xticklabels([])
@@ -285,10 +293,17 @@ class SingleDistribution:
         """Calculate the score for the feature based on its skewness"""
         self.__feature_score: pd.DataFrame
         self.__feature_score_type: Union[None, str]
-        if self.__feature_is_numeric and not self.__feature_is_bool:
+        if (
+            self.__feature_is_numeric or self.__feature_is_datetime
+        ) and not self.__feature_is_bool:
             # calculate skew of median towards deciles
-            self.__feature_score, self.__feature_score_type = utils.inter_decile_skew(
+            feature = (
                 self.feature
+                if not self.__feature_is_datetime
+                else (self.feature - self.feature.min()).dt.total_seconds()
+            )
+            self.__feature_score, self.__feature_score_type = utils.inter_decile_skew(
+                feature
             )
         else:
             # calculate skew towards the mode
@@ -329,16 +344,25 @@ class SingleDistribution:
             all_data = self.feature.to_frame()
 
         # bin target variable if there are too many distinct values
-        if (
-            self.__feature_nunique > self.__binning_threshold
-            and self.__feature_is_numeric
+        if self.__feature_nunique > self.__binning_threshold and (
+            self.__feature_is_numeric or self.__feature_is_datetime
         ):
-            bin_boundaries = np.linspace(
-                self.feature.min(), self.feature.max(), self.__binning_threshold + 1
+            feature = (
+                self.feature
+                if not self.__feature_is_datetime
+                else (self.feature - self.feature.min()).dt.total_seconds()
             )
-            all_data[self.feature.name] = pd.cut(self.feature, bin_boundaries).apply(
+            bin_boundaries = np.linspace(
+                feature.min(), feature.max(), self.__binning_threshold + 1
+            )
+            all_data[self.feature.name] = pd.cut(feature, bin_boundaries).apply(
                 lambda x: x.mid
             )
+            if self.__feature_is_datetime:
+                all_data[self.feature.name] = (
+                    pd.to_timedelta(all_data[self.feature.name], unit="s")
+                    + self.feature.min()
+                )
 
         # calculate summary statistics for each distinct target variable
         if self.__has_target:
@@ -404,12 +428,14 @@ class SingleDistribution:
             # convert to series and set
             data = utils.to_series(feature)
 
-            is_bool, is_numeric, _ = utils.classify_type(data)
+            is_bool, is_numeric, _, _ = utils.classify_type(data)
 
             # reduce feature skew
             if self.__feature_deskew and (is_numeric and not is_bool):
                 self.__feature_transform, self.__feature = utils.reduce_skew(data)
             else:
+                if self.__feature_deskew:
+                    logging.warning("can only deskew numeric features")
                 self.__feature_transform, self.__feature = None, data
 
     # target getter
