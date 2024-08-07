@@ -64,12 +64,13 @@ class ExploratoryDataAnalysis:
 
         # classify inputs
         self.__data_dtypes = set(
-            [utils.classify_type(x)[2] for _, x in self.data.items()]
+            [utils.classify_type(x)[3] for _, x in self.data.items()]
         )
         if self.__has_target:
             (
                 self.__target_is_bool,
                 self.__target_is_numeric,
+                _,
                 self.__target_dtype,
             ) = utils.classify_type(self.target)
             if self.__target_is_numeric and not self.__target_is_bool:

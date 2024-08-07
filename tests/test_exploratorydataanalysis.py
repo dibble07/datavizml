@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -86,6 +88,9 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         "string": [str(i) if not np.isnan(i) else i for i in raw],
         "category": [str(i) if not np.isnan(i) else i for i in raw],
         "boolean": [i < 2.5 if not np.isnan(i) else i for i in raw],
+        "datetime64[ns]": [
+            datetime(2000, 1, i + 1) if not np.isnan(i) else i for i in raw
+        ],
     }
 
     # process raw y values based on type
@@ -203,7 +208,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         assert summary.shape[0] == len(x_names)
 
         # check prediction matrix values
-        if not dtype_target != "no target provided" and not matrix_full:
+        if dtype_target == "no target provided" and not matrix_full:
             assert eda.prediction_matrix == None
         else:
             captured_prediction_matrix = eda.prediction_matrix.pivot(
@@ -211,13 +216,21 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
             ).round(3)
             for col_name, col in captured_prediction_matrix.items():
                 for row_name, captured_val in col.items():
-                    expected_val = expected_prediction_matrix(
-                        row_name[2:],
-                        col_name[2:],
-                        target_rebalance and dtype_target != "no target provided",
-                        dtype_target,
+                    if col_name == "x_datetime64[ns]":
+                        if row_name == "x_datetime64[ns]":
+                            expected_val = 1.0
+                        else:
+                            expected_val = np.nan
+                    else:
+                        expected_val = expected_prediction_matrix(
+                            row_name[2:],
+                            col_name[2:],
+                            target_rebalance and dtype_target != "no target provided",
+                            dtype_target,
+                        )
+                    assert (expected_val == captured_val) or (
+                        np.isnan(expected_val) and np.isnan(captured_val)
                     )
-                    assert expected_val == captured_val
 
         # checks prediction heatmap plotting
         fig, ax = plt.subplots()
