@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -103,7 +105,8 @@ def test_deskew_symmetrical():
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
 )
 @pytest.mark.parametrize(
-    "dtype_feature", ["Int64", "Float64", "string", "category", "boolean"]
+    "dtype_feature",
+    ["Int64", "Float64", "string", "category", "boolean", "datetime64[ns]"],
 )
 def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_deskew):
     # initialise raw values - include a missing value and a modal value
@@ -119,6 +122,9 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     elif dtype_feature == "boolean":
         # convert to boolean
         x = [i < 2.5 if not np.isnan(i) else i for i in raw]
+    elif dtype_feature == "datetime64[ns]":
+        # convert to datetime64
+        x = [datetime(2000, 1, i + 1) if not np.isnan(i) else i for i in raw]
     elif dtype_feature == "Int64":
         x = raw
 
@@ -162,8 +168,8 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
 
     # set expected feature score
     expected_feature_transform = None
-    if dtype_feature in ["Int64", "Float64"]:
-        if feature_deskew:
+    if dtype_feature in ["Int64", "Float64", "datetime64[ns]"]:
+        if feature_deskew and dtype_feature != "datetime64[ns]":
             expected_feature_score = 0.467
             expected_feature_transform = "exp-2"
         else:
@@ -209,11 +215,14 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
 
     # extract values using summary dictionary
     summary = sd.to_dict()
+    # from pprint import pp
+    # pp(summary)
 
     # check feature parameters
     assert summary["feature_name"] == x_name
     assert summary["feature_dtype"] == feature_str
     assert np.round(summary["feature_score"], 3) == expected_feature_score
+    # assert False
     assert (
         summary["feature_score_type"] == "Inter-decile skew"
         if dtype_feature in ["Int64", "Float64"]

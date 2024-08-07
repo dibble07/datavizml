@@ -39,7 +39,8 @@ def classify_type(input) -> Tuple[bool, bool, Any]:
     no_null = input.dropna().convert_dtypes()
     is_bool = pd.api.types.is_bool_dtype(no_null)
     is_numeric = pd.api.types.is_numeric_dtype(no_null)
-    return is_bool, is_numeric, no_null.dtype
+    is_datetime = pd.api.types.is_datetime64_dtype(no_null)
+    return is_bool, is_numeric, is_datetime, no_null.dtype
 
 
 # rebalance classes
