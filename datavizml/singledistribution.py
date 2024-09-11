@@ -6,8 +6,7 @@ import numpy as np
 import pandas as pd
 import ppscore as pps
 import scipy
-from matplotlib import ticker
-from matplotlib import dates
+from matplotlib import dates, ticker
 from statsmodels.stats.proportion import proportion_confint
 
 from datavizml import utils
