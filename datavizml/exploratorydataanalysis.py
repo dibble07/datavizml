@@ -19,7 +19,7 @@ class ExploratoryDataAnalysis:
     :param ncols: Number of columns to use in figure
     :type ncols: float, optional
     :param data_deskew: Reduce data skew, trialling: squaring, rooting, logging, exponents and Yeo-Johnson
-    :type data_deskew: bool, optional
+    :type data_deskew: bool for all features or string or list of string for selective features, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
     :param target_rebalance: Rebalance target
@@ -39,7 +39,7 @@ class ExploratoryDataAnalysis:
         self,
         data: Any,
         ncols: int,
-        data_deskew: bool = False,
+        data_deskew: Union[bool, list, str] = False,
         target: Optional[Any] = None,
         target_rebalance: bool = False,
         prediction_matrix_full: bool = False,
@@ -199,7 +199,11 @@ class ExploratoryDataAnalysis:
                 sd.SingleDistribution(
                     feature=feature,
                     ax=ax,
-                    feature_deskew=self.__data_deskew,
+                    feature_deskew=(
+                        self.__data_deskew
+                        if isinstance(self.__data_deskew, bool)
+                        else feature.name in self.__data_deskew
+                    ),
                     target=self.target if self.__has_target else None,
                     target_score=(
                         self.prediction_matrix.pivot(
