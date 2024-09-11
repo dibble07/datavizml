@@ -33,7 +33,7 @@ def to_frame(input) -> pd.DataFrame:
 
 
 # classify type of data
-def classify_type(input) -> Tuple[bool, bool, Any]:
+def classify_type(input) -> Tuple[bool, bool, bool, Any]:
     """A function to classify pandas series"""
     # drop null values
     no_null = input.dropna().convert_dtypes()

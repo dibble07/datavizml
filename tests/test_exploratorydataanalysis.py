@@ -63,6 +63,15 @@ def test_transforms():
         axes_height=3,
     )()
 
+    # check ability to transform
+    ExploratoryDataAnalysis(
+        data=data_transform,
+        ncols=5,
+        data_deskew=["square", "square-root"],
+        figure_width=18,
+        axes_height=3,
+    )()
+
 
 @pytest.mark.parametrize(
     "target_rebalance",
