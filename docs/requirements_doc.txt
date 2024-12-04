@@ -1,4 +1,4 @@
+-e .
 myst-nb==0.16
 sphinx==5.3.0
 sphinx-rtd-theme==1.2.0
--e .
