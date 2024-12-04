@@ -24,6 +24,8 @@ class ExploratoryDataAnalysis:
     :type target: pandas Series, optional
     :param target_rebalance: Rebalance target
     :type target_rebalance: bool, optional
+    :param metric: Metric used for prevalence, "count" or "prop" (default)
+    :type metric: string, optional
     :param prediction_matrix_full: Full or reduced prediction matrix
     :type prediction_matrix_full: bool, optional
     :param figure_width: Width of figure
@@ -42,6 +44,7 @@ class ExploratoryDataAnalysis:
         data_deskew: Union[bool, list, str] = False,
         target: Optional[Any] = None,
         target_rebalance: bool = False,
+        metric: str = "prop",
         prediction_matrix_full: bool = False,
         figure_width: Union[int, float] = FIGURE_WIDTH,
         axes_height: Union[int, float] = AXES_HEIGHT,
@@ -58,6 +61,7 @@ class ExploratoryDataAnalysis:
         self.__prediction_matrix_full = prediction_matrix_full
         self.__figure_width = figure_width
         self.__axes_height = axes_height
+        self.__metric = metric
 
         # calculate general use variables
         self.__nrows = -(-(self.data.shape[1]) // self.__ncols)
@@ -212,6 +216,7 @@ class ExploratoryDataAnalysis:
                         if self.__has_target
                         else None
                     ),
+                    metric=self.__metric,
                 )
             )
 

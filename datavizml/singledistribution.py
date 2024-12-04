@@ -29,6 +29,8 @@ class SingleDistribution:
     :type target_rebalance: bool, optional
     :param binning_threshold: Maximum number of distinct values in the column before binning, defaults to 12
     :type binning_threshold: int, optional
+    :param metric: Metric used for prevalence, "count" or "prop" (default)
+    :type metric: string, optional
     """
 
     BINNING_THRESHOLD_DEFAULT = 12  # distinct values for binning
@@ -45,6 +47,7 @@ class SingleDistribution:
         target_score: Optional[float] = None,
         target_rebalance: bool = False,
         binning_threshold: Optional[int] = None,
+        metric: str = "prop",
     ) -> None:
         """Constructor method"""
         # input variables
@@ -71,6 +74,7 @@ class SingleDistribution:
             if binning_threshold
             else SingleDistribution.BINNING_THRESHOLD_DEFAULT
         )
+        self.__metric = metric
 
         # check input
         if self.__has_target:
@@ -160,7 +164,7 @@ class SingleDistribution:
 
         # plot feature frequency
         markerline, stemlines, baseline = self.ax_feature.stem(
-            self.__feature_summary.index, self.__feature_summary["count"]
+            self.__feature_summary.index, self.__feature_summary[self.__metric]
         )
         markerline.set_color(colour_feature)
         stemlines.set_color(colour_feature)
@@ -262,8 +266,16 @@ class SingleDistribution:
                 self.ax_feature.tick_params(axis="x", labelrotation=90)
 
         # decorate first y axis
-        self.ax_feature.set_ylabel("Frequency")
-        self.ax_feature.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}"))
+        if self.__metric == "count":
+            self.ax_feature.set_ylabel("Frequency")
+            self.ax_feature.yaxis.set_major_formatter(
+                ticker.StrMethodFormatter("{x:,.0f}")
+            )
+        elif self.__metric == "prop":
+            self.ax_feature.set_ylabel("Frequency density")
+            self.ax_feature.yaxis.set_major_formatter(
+                ticker.StrMethodFormatter("{x:,.2f}")
+            )
 
         # decorate second y axis
         if self.__has_target:
@@ -386,6 +398,9 @@ class SingleDistribution:
             self.__feature_summary.index = self.__feature_summary.index.map(
                 lambda x: x[0]
             )
+        self.__feature_summary["prop"] = (
+            self.__feature_summary["count"] / self.__feature_summary["count"].sum()
+        )
 
         # convert index to string from boolean for printing purposes
         if self.__feature_is_bool:
@@ -433,8 +448,6 @@ class SingleDistribution:
             if self.__feature_deskew and (is_numeric and not is_bool):
                 self.__feature_transform, self.__feature = utils.reduce_skew(data)
             else:
-                if self.__feature_deskew:
-                    logging.warning("can only deskew numeric features")
                 self.__feature_transform, self.__feature = None, data
 
     # target getter
