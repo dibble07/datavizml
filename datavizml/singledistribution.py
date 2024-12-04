@@ -448,8 +448,6 @@ class SingleDistribution:
             if self.__feature_deskew and (is_numeric and not is_bool):
                 self.__feature_transform, self.__feature = utils.reduce_skew(data)
             else:
-                if self.__feature_deskew:
-                    logging.warning("can only deskew numeric features")
                 self.__feature_transform, self.__feature = None, data
 
     # target getter
