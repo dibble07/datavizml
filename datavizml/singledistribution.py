@@ -186,7 +186,7 @@ class SingleDistribution:
                 ci_diff_all = {}
                 y_plot_all = {}
                 for class_name, values in self.__feature_summary.drop(
-                    columns="count"
+                    columns=["count", "prop"]
                 ).items():
                     mean = values / self.__feature_summary["count"]
                     ci_lo, ci_hi = proportion_confint(
