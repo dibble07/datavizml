@@ -62,7 +62,7 @@ class SingleDistribution:
                 # clear target if the same as feature
                 del self.__target
                 self.__has_target = False
-        if isinstance(target_score, (int, float)):
+        if isinstance(target_score, (int, float, np.integer, np.floating)):
             self.__target_score = target_score
             self.__target_score_type = "PPS"
         elif target_score is not None:
