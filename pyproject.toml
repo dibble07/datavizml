@@ -23,6 +23,7 @@ dependencies = [
     "scipy>=1.12.0",
     "seaborn",
     "statsmodels",
+    "tqdm",
 ]
 dynamic = ["version"]
 
