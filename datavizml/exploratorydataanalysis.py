@@ -6,6 +6,7 @@ import pandas as pd
 import ppscore as pps
 import seaborn as sns
 from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
 
 from datavizml import singledistribution as sd
 from datavizml import utils
@@ -140,7 +141,8 @@ class ExploratoryDataAnalysis:
         :rtype: matplotlib.figure.Figure
         """
         # call the plot for each object
-        for plot in self:  # type: ignore
+        for plot in (pbar := tqdm(self, total=len(self.single_distributions))):  # type: ignore
+            pbar.set_description(plot.feature.name)
             plot()
 
         return self.fig
