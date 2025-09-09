@@ -20,7 +20,7 @@ class ExploratoryDataAnalysis:
     :param ncols: Number of columns to use in figure
     :type ncols: float, optional
     :param data_deskew: Reduce data skew, trialling: squaring, rooting, logging, exponents and Yeo-Johnson
-    :type data_deskew: bool for all features or string or list of string for selective features, optional
+    :type data_deskew: bool for all features, string or list of strings for selective features, dict of column names and transforms for selective features and transforms, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
     :param target_rebalance: Rebalance target
@@ -42,7 +42,7 @@ class ExploratoryDataAnalysis:
         self,
         data: Any,
         ncols: int,
-        data_deskew: Union[bool, list, str] = False,
+        data_deskew: Union[bool, dict, list, str] = False,
         target: Optional[Any] = None,
         target_rebalance: bool = False,
         metric: str = "prop",
@@ -53,7 +53,9 @@ class ExploratoryDataAnalysis:
         """Constructor method"""
         # input variables
         self.data = data
-        self.__data_deskew = data_deskew
+        self.__data_deskew = (
+            [data_deskew] if isinstance(data_deskew, str) else data_deskew
+        )
         self.__has_target = target is not None
         if self.__has_target:
             self.target = target
@@ -201,15 +203,20 @@ class ExploratoryDataAnalysis:
         # initialise all single distribution objects
         self.single_distributions = []
         for (_, feature), ax in zip(self.data.items(), self.ax.flatten()):
+            if isinstance(self.__data_deskew, bool):
+                feature_deskew = self.__data_deskew
+            elif isinstance(self.__data_deskew, list):
+                feature_deskew = feature.name in self.__data_deskew
+            elif isinstance(self.__data_deskew, dict):
+                if feature.name in self.__data_deskew:
+                    feature_deskew = self.__data_deskew[feature.name]
+                else:
+                    feature_deskew = False
             self.single_distributions.append(
                 sd.SingleDistribution(
                     feature=feature,
                     ax=ax,
-                    feature_deskew=(
-                        self.__data_deskew
-                        if isinstance(self.__data_deskew, bool)
-                        else feature.name in self.__data_deskew
-                    ),
+                    feature_deskew=feature_deskew,
                     target=self.target if self.__has_target else None,
                     target_score=(
                         self.prediction_matrix.pivot(

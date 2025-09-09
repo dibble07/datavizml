@@ -99,7 +99,9 @@ def inter_decile_skew(data: pd.DataFrame) -> Tuple[float, str]:
 
 
 # reduce skew
-def reduce_skew(df: pd.DataFrame) -> Tuple[Union[None, str], pd.DataFrame]:
+def reduce_skew(
+    df: pd.DataFrame, transforms: Union[None, list, str] = None
+) -> Tuple[Union[None, str], pd.DataFrame]:
     """A function to transform the data to reduce skew"""
     # make all data positive
     min_ = min(df)
@@ -109,6 +111,10 @@ def reduce_skew(df: pd.DataFrame) -> Tuple[Union[None, str], pd.DataFrame]:
         df_pos_nan = df
     df_pos = df_pos_nan.dropna()
 
+    # enforce list type for requested
+    if isinstance(transforms, str):
+        transforms = [transforms]
+
     # define transformers
     transformers = {
         "square": np.square,
@@ -117,6 +123,8 @@ def reduce_skew(df: pd.DataFrame) -> Tuple[Union[None, str], pd.DataFrame]:
         "exp-2": np.exp2,
         "yeojohnson": lambda x: stats.yeojohnson(x)[0],
     }
+    if transforms is not None:
+        transformers = {k: v for k, v in transformers.items() if k in transforms}
 
     # initiate outputs and skew
     skew_ = abs(df_pos.skew())
