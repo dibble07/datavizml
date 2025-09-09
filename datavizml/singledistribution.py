@@ -42,7 +42,7 @@ class SingleDistribution:
         self,
         feature: Any,
         ax: Any,
-        feature_deskew: bool = False,
+        feature_deskew: Union[bool, list, str] = False,
         target: Optional[Any] = None,
         target_score: Optional[float] = None,
         target_rebalance: bool = False,
@@ -446,7 +446,14 @@ class SingleDistribution:
 
             # reduce feature skew
             if self.__feature_deskew and (is_numeric and not is_bool):
-                self.__feature_transform, self.__feature = utils.reduce_skew(data)
+                self.__feature_transform, self.__feature = utils.reduce_skew(
+                    data,
+                    transforms=(
+                        None
+                        if isinstance(self.__feature_deskew, bool)
+                        else self.__feature_deskew
+                    ),
+                )
             else:
                 self.__feature_transform, self.__feature = None, data
 
