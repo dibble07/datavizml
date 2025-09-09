@@ -111,7 +111,7 @@ def reduce_skew(
         df_pos_nan = df
     df_pos = df_pos_nan.dropna()
 
-    # enforce list type for requested
+    # enforce list type for requested transforms
     if isinstance(transforms, str):
         transforms = [transforms]
 
