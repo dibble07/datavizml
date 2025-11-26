@@ -3,11 +3,11 @@ from typing import Any, Dict, Optional, Union
 import matplotlib
 import numpy as np
 import pandas as pd
-import ppscore as pps
 import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
+from datavizml import ppscore as pps
 from datavizml import singledistribution as sd
 from datavizml import utils
 

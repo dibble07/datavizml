@@ -16,11 +16,10 @@ classifiers = [
 ]
 dependencies = [
     "matplotlib",
-    "numpy<2",
+    "numpy",
     "pandas",
-    "ppscore",
     "scikit-learn",
-    "scipy>=1.12.0",
+    "scipy",
     "seaborn",
     "setuptools<81",
     "statsmodels",

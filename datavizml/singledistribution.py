@@ -4,11 +4,11 @@ from typing import Any, Dict, Optional, Union
 import matplotlib
 import numpy as np
 import pandas as pd
-import ppscore as pps
 import scipy
 from matplotlib import dates, ticker
 from statsmodels.stats.proportion import proportion_confint
 
+from datavizml import ppscore as pps
 from datavizml import utils
 
 
