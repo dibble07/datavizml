@@ -1,5 +1,3 @@
-import numpy as np
-
 from sklearn import tree
 from sklearn import preprocessing
 from sklearn.model_selection import cross_val_score
@@ -16,57 +14,36 @@ from pandas.api.types import (
     is_timedelta64_dtype,
 )
 
-
-NOT_SUPPORTED_ANYMORE = "NOT_SUPPORTED_ANYMORE"
-TO_BE_CALCULATED = -1
+# random_seed = 42 # remove created and passed around random state and use this instead
 
 
 def _calculate_model_cv_score_(
-    df, target, feature, task, cross_validation, random_seed, **kwargs
+    df, target, feature, task, cross_validation, random_seed
 ):
     "Calculates the mean model score based on cross-validation"
-    # Sources about the used methods:
-    # https://scikit-learn.org/stable/modules/tree.html
-    # https://scikit-learn.org/stable/modules/cross_validation.html
-    # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_score.html
-    metric = task["metric_key"]
-    model = task["model"]
-    # shuffle the rows - this is important for cross-validation
-    # because the cross-validation just takes the first n lines
-    # if there is a strong pattern in the rows eg 0,0,0,0,1,1,1,1
-    # then this will lead to problems because the first cv sees mostly 0 and the later 1
-    # this approach might be wrong for timeseries because it might leak information
+
+    # shuffle the rows
     df = df.sample(frac=1, random_state=random_seed, replace=False)
 
     # preprocess target
     if task["type"] == "classification":
-        label_encoder = preprocessing.LabelEncoder()
-        df[target] = label_encoder.fit_transform(df[target])
-        target_series = df[target]
-    else:
-        target_series = df[target]
+        df[target] = preprocessing.LabelEncoder().fit_transform(df[target])
+    target_series = df[target]
 
     # preprocess feature
+    array = df[feature].values.reshape(-1, 1)
     if _dtype_represents_categories(df[feature]):
-        one_hot_encoder = preprocessing.OneHotEncoder()
-        array = df[feature].__array__()
-        sparse_matrix = one_hot_encoder.fit_transform(array.reshape(-1, 1))
-        feature_input = sparse_matrix
+        feature_input = preprocessing.OneHotEncoder().fit_transform(array)
     else:
-        # reshaping needed because there is only 1 feature
-        array = df[feature].values
-        if not isinstance(array, np.ndarray):  # e.g Int64 IntegerArray
-            array = array.to_numpy()
-        feature_input = array.reshape(-1, 1)
+        feature_input = array
 
-    # Cross-validation is stratifiedKFold for classification, KFold for regression
-    # CV on one core (n_job=1; default) has shown to be fastest
+    # evaluate model
     scores = cross_val_score(
-        model,
+        task["model"],
         feature_input,
-        target_series.to_numpy(),
+        target_series,
         cv=cross_validation,
-        scoring=metric,
+        scoring=task["metric_key"],
     )
 
     return scores.mean()
@@ -74,54 +51,36 @@ def _calculate_model_cv_score_(
 
 def _normalized_mae_score(model_mae, naive_mae):
     "Normalizes the model MAE score, given the baseline score"
-    # # Value range of MAE is [0, infinity), 0 is best
-    # 10, 5 ==> 0 because worse than naive
-    # 10, 20 ==> 0.5
-    # 5, 20 ==> 0.75 = 1 - (mae/base_mae)
-    if model_mae > naive_mae:
-        return 0
-    else:
-        return 1 - (model_mae / naive_mae)
+    out = 0 if model_mae > naive_mae else 1 - (model_mae / naive_mae)
+    return out
 
 
-def _mae_normalizer(df, y, model_score, **kwargs):
-    "In case of MAE, calculates the baseline score for y and derives the PPS."
+def _mae_normalizer(df, y, model_score, **kwargs):  ## remove kwargs
+    "In case of MAE, calculates the baseline score for y and derives the PPS"
     df["naive"] = df[y].median()
-    baseline_score = mean_absolute_error(
-        df[y].to_numpy(), df["naive"].to_numpy()
-    )  # true, pred
-
+    baseline_score = mean_absolute_error(df[y], df["naive"])
     ppscore = _normalized_mae_score(abs(model_score), baseline_score)
     return ppscore, baseline_score
 
 
 def _normalized_f1_score(model_f1, baseline_f1):
     "Normalizes the model F1 score, given the baseline score"
-    # # F1 ranges from 0 to 1
-    # # 1 is best
-    # 0.5, 0.7 ==> 0 because model is worse than naive baseline
-    # 0.75, 0.5 ==> 0.5
-    #
-    if model_f1 < baseline_f1:
-        return 0
-    else:
-        scale_range = 1.0 - baseline_f1  # eg 0.3
-        f1_diff = model_f1 - baseline_f1  # eg 0.1
-        return f1_diff / scale_range  # 0.1/0.3 = 0.33
+    out = 0 if model_f1 < baseline_f1 else (model_f1 - baseline_f1) / (1 - baseline_f1)
+    return out
 
 
 def _f1_normalizer(df, y, model_score, random_seed):
-    "In case of F1, calculates the baseline score for y and derives the PPS."
-    label_encoder = preprocessing.LabelEncoder()
-    df["truth"] = label_encoder.fit_transform(df[y])
+    "In case of F1, calculates the baseline score for y and derives the PPS"
+    df["truth"] = preprocessing.LabelEncoder().fit_transform(df[y])
     df["most_common_value"] = df["truth"].value_counts().index[0]
-    random = df["truth"].sample(frac=1, random_state=random_seed)
-
     baseline_score = max(
         f1_score(df["truth"], df["most_common_value"], average="weighted"),
-        f1_score(df["truth"], random, average="weighted"),
+        f1_score(
+            df["truth"],
+            df["truth"].sample(frac=1, random_state=random_seed),
+            average="weighted",
+        ),
     )
-
     ppscore = _normalized_f1_score(model_score, baseline_score)
     return ppscore, baseline_score
 
@@ -130,9 +89,9 @@ VALID_CALCULATIONS = {
     "regression": {
         "type": "regression",
         "is_valid_score": True,
-        "model_score": TO_BE_CALCULATED,
-        "baseline_score": TO_BE_CALCULATED,
-        "ppscore": TO_BE_CALCULATED,
+        "model_score": None,
+        "baseline_score": None,
+        "ppscore": None,
         "metric_name": "mean absolute error",
         "metric_key": "neg_mean_absolute_error",
         "model": tree.DecisionTreeRegressor(),
@@ -141,53 +100,20 @@ VALID_CALCULATIONS = {
     "classification": {
         "type": "classification",
         "is_valid_score": True,
-        "model_score": TO_BE_CALCULATED,
-        "baseline_score": TO_BE_CALCULATED,
-        "ppscore": TO_BE_CALCULATED,
+        "model_score": None,
+        "baseline_score": None,
+        "ppscore": None,
         "metric_name": "weighted F1",
         "metric_key": "f1_weighted",
         "model": tree.DecisionTreeClassifier(),
         "score_normalizer": _f1_normalizer,
     },
-    "predict_itself": {
+    "predict_itself": {  # remove this task entirely if possible
         "type": "predict_itself",
         "is_valid_score": True,
         "model_score": 1,
         "baseline_score": 0,
         "ppscore": 1,
-        "metric_name": None,
-        "metric_key": None,
-        "model": None,
-        "score_normalizer": None,
-    },
-    "target_is_constant": {
-        "type": "target_is_constant",
-        "is_valid_score": True,
-        "model_score": 1,
-        "baseline_score": 1,
-        "ppscore": 0,
-        "metric_name": None,
-        "metric_key": None,
-        "model": None,
-        "score_normalizer": None,
-    },
-    "target_is_id": {
-        "type": "target_is_id",
-        "is_valid_score": True,
-        "model_score": 0,
-        "baseline_score": 0,
-        "ppscore": 0,
-        "metric_name": None,
-        "metric_key": None,
-        "model": None,
-        "score_normalizer": None,
-    },
-    "feature_is_id": {
-        "type": "feature_is_id",
-        "is_valid_score": True,
-        "model_score": 0,
-        "baseline_score": 0,
-        "ppscore": 0,
         "metric_name": None,
         "metric_key": None,
         "model": None,
@@ -349,7 +275,7 @@ def score(
     df,
     x,
     y,
-    task=NOT_SUPPORTED_ANYMORE,
+    task=None,
     sample=5_000,
     cross_validation=4,
     random_seed=123,
@@ -413,7 +339,7 @@ def score(
         raise AssertionError(
             f"The dataframe has {len(df[[y]].columns)} columns with the same column name {y}\nPlease adjust the dataframe and make sure that only 1 column has the name {y}"
         )
-    if task is not NOT_SUPPORTED_ANYMORE:
+    if task is not None:
         raise AttributeError(
             "The attribute 'task' is no longer supported because it led to confusion and inconsistencies.\nThe task of the model is now determined based on the data types of the columns. If you want to change the task please adjust the data type of the column.\nFor more details, please refer to the README"
         )
