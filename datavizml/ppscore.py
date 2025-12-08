@@ -14,12 +14,10 @@ from pandas.api.types import (
     is_timedelta64_dtype,
 )
 
-# random_seed = 42 # remove created and passed around random state and use this instead
+random_seed = 123
 
 
-def _calculate_model_cv_score_(
-    df, target, feature, task, cross_validation, random_seed
-):
+def _calculate_model_cv_score_(df, target, feature, task, cross_validation):
     "Calculates the mean model score based on cross-validation"
 
     # shuffle the rows
@@ -69,7 +67,7 @@ def _normalized_f1_score(model_f1, baseline_f1):
     return out
 
 
-def _f1_normalizer(df, y, model_score, random_seed):
+def _f1_normalizer(df, y, model_score):
     "In case of F1, calculates the baseline score for y and derives the PPS"
     df["truth"] = preprocessing.LabelEncoder().fit_transform(df[y])
     df["most_common_value"] = df["truth"].value_counts().index[0]
@@ -139,7 +137,7 @@ def _dtype_represents_categories(series) -> bool:
     )
 
 
-def _determine_case_and_prepare_df(df, x, y, sample=5_000, random_seed=123):
+def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     "Returns str with the name of the determined case based on the columns x and y"
     if x == y:
         return df, "predict_itself"
@@ -155,7 +153,7 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000, random_seed=123):
         #     "After dropping missing values, there are no valid rows left"
         # )
 
-    df = _maybe_sample(df, sample, random_seed=random_seed)
+    df = _maybe_sample(df, sample)
 
     if _feature_is_id(df, x):
         return df, "feature_is_id"
@@ -197,7 +195,7 @@ def _feature_is_id(df, x):
     return category_count == len(df[x])
 
 
-def _maybe_sample(df, sample, random_seed=None):
+def _maybe_sample(df, sample):
     """
     Maybe samples the rows of the given df to have at most `sample` rows
     If sample is `None` or falsy, there will be no sampling.
@@ -209,8 +207,6 @@ def _maybe_sample(df, sample, random_seed=None):
         Dataframe that might be sampled
     sample : int or `None`
         Number of rows to be sampled
-    random_seed : int or `None`
-        Random seed that is forwarded to pandas.DataFrame.sample as `random_state`
 
     Returns
     -------
@@ -231,12 +227,8 @@ def _is_column_in_df(column, df):
         return False
 
 
-def _score(
-    df, x, y, task, sample, cross_validation, random_seed, invalid_score, catch_errors
-):
-    df, case_type = _determine_case_and_prepare_df(
-        df, x, y, sample=sample, random_seed=random_seed
-    )
+def _score(df, x, y, task, sample, cross_validation, invalid_score, catch_errors):
+    df, case_type = _determine_case_and_prepare_df(df, x, y, sample=sample)
     task = _get_task(case_type, invalid_score)
 
     if case_type in ["classification", "regression"]:
@@ -246,13 +238,10 @@ def _score(
             feature=x,
             task=task,
             cross_validation=cross_validation,
-            random_seed=random_seed,
         )
         # IDEA: the baseline_scores do sometimes change significantly, e.g. for F1 and thus change the PPS
         # we might want to calculate the baseline_score 10 times and use the mean in order to have less variance
-        ppscore, baseline_score = task["score_normalizer"](
-            df, y, model_score, random_seed=random_seed
-        )
+        ppscore, baseline_score = task["score_normalizer"](df, y, model_score)
     else:
         model_score = task["model_score"]
         baseline_score = task["baseline_score"]
@@ -278,7 +267,6 @@ def score(
     task=None,
     sample=5_000,
     cross_validation=4,
-    random_seed=123,
     invalid_score=0,
     catch_errors=True,
 ):
@@ -304,9 +292,6 @@ def score(
     cross_validation : int
         Number of iterations during cross-validation. This has the following implications:
         For example, if the number is 4, then it is possible to detect patterns when there are at least 4 times the same observation. If the limit is increased, the required minimum observations also increase. This is important, because this is the limit when sklearn will throw an error and the PPS cannot be calculated
-    random_seed : int or `None`
-        Random seed for the parts of the calculation that require random numbers, e.g. shuffling or sampling.
-        If the value is set, the results will be reproducible. If the value is `None` a new random number is drawn at the start of each calculation.
     invalid_score : any
         The score that is returned when a calculation is invalid, e.g. because the data type was not supported.
     catch_errors : bool
@@ -344,11 +329,6 @@ def score(
             "The attribute 'task' is no longer supported because it led to confusion and inconsistencies.\nThe task of the model is now determined based on the data types of the columns. If you want to change the task please adjust the data type of the column.\nFor more details, please refer to the README"
         )
 
-    if random_seed is None:
-        from random import random
-
-        random_seed = int(random() * 1000)
-
     try:
         return _score(
             df,
@@ -357,7 +337,6 @@ def score(
             task,
             sample,
             cross_validation,
-            random_seed,
             invalid_score,
             catch_errors,
         )
@@ -443,7 +422,7 @@ def predictors(df, y, output="df", sorted=True, **kwargs):
         Whether or not to sort the output dataframe/list by the ppscore
     kwargs:
         Other key-word arguments that shall be forwarded to the pps.score method,
-        e.g. `sample, `cross_validation, `random_seed, `invalid_score`, `catch_errors`
+        e.g. `sample`, `cross_validation`, `invalid_score`, `catch_errors`
 
     Returns
     -------
@@ -491,7 +470,7 @@ def matrix(df, output="df", sorted=False, **kwargs):
         Whether or not to sort the output dataframe/list by the ppscore
     kwargs:
         Other key-word arguments that shall be forwarded to the pps.score method,
-        e.g. `sample, `cross_validation, `random_seed, `invalid_score`, `catch_errors`
+        e.g. `sample`, `cross_validation`, `invalid_score`, `catch_errors`
 
     Returns
     -------
