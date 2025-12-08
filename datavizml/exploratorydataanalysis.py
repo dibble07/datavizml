@@ -182,7 +182,6 @@ class ExploratoryDataAnalysis:
             self.__prediction_matrix = pps.matrix(
                 df=df,
                 sample=None,
-                invalid_score=np.nan,
             )
         else:
             # calculate reduced matrix
@@ -192,7 +191,6 @@ class ExploratoryDataAnalysis:
                     y=self.target.name,
                     sorted=False,
                     sample=None,
-                    invalid_score=np.nan,
                 )
             else:
                 self.__prediction_matrix = None

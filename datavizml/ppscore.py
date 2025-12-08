@@ -1,8 +1,9 @@
-from sklearn import tree
+from sklearn import logger, tree
 from sklearn import preprocessing
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_absolute_error, f1_score
 
+import numpy as np
 import pandas as pd
 from pandas.api.types import (
     is_numeric_dtype,
@@ -11,7 +12,6 @@ from pandas.api.types import (
     is_categorical_dtype,
     is_string_dtype,
     is_datetime64_any_dtype,
-    is_timedelta64_dtype,
 )
 
 random_seed = 123
@@ -121,9 +121,6 @@ VALID_CALCULATIONS = {
 
 INVALID_CALCULATIONS = [
     "target_is_datetime",
-    "target_data_type_not_supported",
-    "empty_dataframe_after_dropping_na",
-    "unknown_error",
 ]
 
 
@@ -172,7 +169,7 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
         # this check needs to be after is_bool_dtype (which is part of _dtype_represents_categories) because bool is considered numeric by pandas
         return df, "regression"
 
-    if is_datetime64_any_dtype(df[y]) or is_timedelta64_dtype(df[y]):
+    if is_datetime64_any_dtype(df[y]):
         # IDEA: show warning
         # raise TypeError(
         #     f"The target column {y} has the dtype {df[y].dtype} which is not supported. A possible solution might be to convert {y} to a string column"
@@ -227,9 +224,9 @@ def _is_column_in_df(column, df):
         return False
 
 
-def _score(df, x, y, task, sample, cross_validation, invalid_score, catch_errors):
+def _score(df, x, y, task, sample, cross_validation):
     df, case_type = _determine_case_and_prepare_df(df, x, y, sample=sample)
-    task = _get_task(case_type, invalid_score)
+    task = _get_task(case_type)
 
     if case_type in ["classification", "regression"]:
         model_score = _calculate_model_cv_score_(
@@ -267,8 +264,6 @@ def score(
     task=None,
     sample=5_000,
     cross_validation=4,
-    invalid_score=0,
-    catch_errors=True,
 ):
     """
     Calculate the Predictive Power Score (PPS) for "x predicts y"
@@ -292,10 +287,6 @@ def score(
     cross_validation : int
         Number of iterations during cross-validation. This has the following implications:
         For example, if the number is 4, then it is possible to detect patterns when there are at least 4 times the same observation. If the limit is increased, the required minimum observations also increase. This is important, because this is the limit when sklearn will throw an error and the PPS cannot be calculated
-    invalid_score : any
-        The score that is returned when a calculation is invalid, e.g. because the data type was not supported.
-    catch_errors : bool
-        If `True` all errors will be catched and reported as `unknown_error` which ensures convenience. If `False` errors will be raised. This is helpful for inspecting and debugging errors.
 
     Returns
     -------
@@ -328,53 +319,39 @@ def score(
         raise AttributeError(
             "The attribute 'task' is no longer supported because it led to confusion and inconsistencies.\nThe task of the model is now determined based on the data types of the columns. If you want to change the task please adjust the data type of the column.\nFor more details, please refer to the README"
         )
-
-    try:
-        return _score(
-            df,
-            x,
-            y,
-            task,
-            sample,
-            cross_validation,
-            invalid_score,
-            catch_errors,
+    if cross_validation > len(df):
+        logger.warning(
+            f"cross_validation value ({cross_validation}) has been reduced to number of samples present ({len(df)})"
         )
-    except Exception as exception:
-        if catch_errors:
-            case_type = "unknown_error"
-            task = _get_task(case_type, invalid_score)
-            return {
-                "x": x,
-                "y": y,
-                "ppscore": task["ppscore"],
-                "case": case_type,
-                "is_valid_score": task["is_valid_score"],
-                "metric": task["metric_name"],
-                "baseline_score": task["baseline_score"],
-                "model_score": task["model_score"],  # sklearn returns negative mae
-                "model": task["model"],
-            }
-        else:
-            raise exception
+        cross_validation = len(df)
+
+    return _score(
+        df,
+        x,
+        y,
+        task,
+        sample,
+        cross_validation,
+    )
 
 
-def _get_task(case_type, invalid_score):
+def _get_task(case_type):
     if case_type in VALID_CALCULATIONS.keys():
         return VALID_CALCULATIONS[case_type]
     elif case_type in INVALID_CALCULATIONS:
         return {
             "type": case_type,
             "is_valid_score": False,
-            "model_score": invalid_score,
-            "baseline_score": invalid_score,
-            "ppscore": invalid_score,
+            "model_score": np.nan,
+            "baseline_score": np.nan,
+            "ppscore": np.nan,
             "metric_name": None,
             "metric_key": None,
             "model": None,
             "score_normalizer": None,
         }
-    raise Exception(f"case_type {case_type} is not supported")
+    else:
+        raise Exception(f"case_type {case_type} is not supported")
 
 
 def _format_list_of_dicts(scores, output, sorted):
@@ -422,7 +399,7 @@ def predictors(df, y, output="df", sorted=True, **kwargs):
         Whether or not to sort the output dataframe/list by the ppscore
     kwargs:
         Other key-word arguments that shall be forwarded to the pps.score method,
-        e.g. `sample`, `cross_validation`, `invalid_score`, `catch_errors`
+        e.g. `sample`, `cross_validation`
 
     Returns
     -------
@@ -470,7 +447,7 @@ def matrix(df, output="df", sorted=False, **kwargs):
         Whether or not to sort the output dataframe/list by the ppscore
     kwargs:
         Other key-word arguments that shall be forwarded to the pps.score method,
-        e.g. `sample`, `cross_validation`, `invalid_score`, `catch_errors`
+        e.g. `sample`, `cross_validation`
 
     Returns
     -------

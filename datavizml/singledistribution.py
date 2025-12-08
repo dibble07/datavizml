@@ -339,7 +339,6 @@ class SingleDistribution:
                 x=self.feature.name,
                 y=self.target.name,
                 sample=None,
-                invalid_score=np.nan,
             )["ppscore"]
             self.__target_score_type = "PPS"
         else:
