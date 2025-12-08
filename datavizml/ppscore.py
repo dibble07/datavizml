@@ -53,7 +53,7 @@ def _normalized_mae_score(model_mae, naive_mae):
     return out
 
 
-def _mae_normalizer(df, y, model_score, **kwargs):  ## remove kwargs
+def _mae_normalizer(df, y, model_score):
     "In case of MAE, calculates the baseline score for y and derives the PPS"
     df["naive"] = df[y].median()
     baseline_score = mean_absolute_error(df[y], df["naive"])
