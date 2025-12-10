@@ -106,7 +106,6 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
         return df, "predict_itself"
 
     df = df[[x, y]]
-    # IDEA: log.warning when values have been dropped
     df = df.dropna()
 
     if is_datetime64_any_dtype(df[y]):
@@ -114,25 +113,14 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
 
     df = _maybe_sample(df, sample)
 
-    category_count = df[y].value_counts().count()
-    if category_count == 1:
-        # it is helpful to separate this case in order to save unnecessary calculation time
-        return df, "target_is_constant"
-    if is_categorical_dtype(df[y]) and (category_count == len(df[y])):
-        # it is important to separate this case in order to save unnecessary calculation time
-        return df, "target_is_id"
-
     if is_categorical_dtype(df[y]):
         return df, "classification"
-    if is_numeric_dtype(df[y]):
-        # this check needs to be after is_bool_dtype (which is part of is_categorical_dtype) because bool is considered numeric by pandas
+    if is_numeric_dtype(df[y]) and not is_bool_dtype(df[y]):
         return df, "regression"
-
-    # IDEA: show warning
-    # raise Exception(
-    #     f"Could not infer a valid task based on the target {y}. The dtype {df[y].dtype} is not yet supported"
-    # )  # pragma: no cover
-    return df, "target_data_type_not_supported"
+    else:
+        raise TypeError(
+            f"Cannot determine whether {df.dtypes} should be regression or classification"
+        )
 
 
 def _maybe_sample(df, sample):
