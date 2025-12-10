@@ -114,9 +114,6 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
 
     df = _maybe_sample(df, sample)
 
-    if _feature_is_id(df, x):
-        return df, "feature_is_id"
-
     category_count = df[y].value_counts().count()
     if category_count == 1:
         # it is helpful to separate this case in order to save unnecessary calculation time
@@ -136,15 +133,6 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     #     f"Could not infer a valid task based on the target {y}. The dtype {df[y].dtype} is not yet supported"
     # )  # pragma: no cover
     return df, "target_data_type_not_supported"
-
-
-def _feature_is_id(df, x):
-    "Returns Boolean if the feature column x is an ID"
-    if not is_categorical_dtype(df[x]):
-        return False
-
-    category_count = df[x].value_counts().count()
-    return category_count == len(df[x])
 
 
 def _maybe_sample(df, sample):
