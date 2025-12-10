@@ -225,18 +225,12 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
             ).round(3)
             for col_name, col in captured_prediction_matrix.items():
                 for row_name, captured_val in col.items():
-                    if col_name == "x_datetime64[ns]":
-                        if row_name == "x_datetime64[ns]":
-                            expected_val = 1.0
-                        else:
-                            expected_val = np.nan
-                    else:
-                        expected_val = expected_prediction_matrix(
-                            row_name[2:],
-                            col_name[2:],
-                            target_rebalance and dtype_target != "no target provided",
-                            dtype_target,
-                        )
+                    expected_val = expected_prediction_matrix(
+                        row_name[2:],
+                        col_name[2:],
+                        target_rebalance and dtype_target != "no target provided",
+                        dtype_target,
+                    )
                     assert (expected_val == captured_val) or (
                         np.isnan(expected_val) and np.isnan(captured_val)
                     )

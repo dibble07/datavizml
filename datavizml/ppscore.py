@@ -119,8 +119,6 @@ VALID_CALCULATIONS = {
     },
 }
 
-INVALID_CALCULATIONS = ["target_is_datetime"]  # remove this
-
 
 def is_categorical_dtype(series) -> bool:
     "Determines if the dtype of the series represents categorical values"
@@ -141,6 +139,9 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     # IDEA: log.warning when values have been dropped
     df = df.dropna()
 
+    if is_datetime64_any_dtype(df[y]):
+        df[y] = df[y].astype(int) / 1e9
+
     df = _maybe_sample(df, sample)
 
     if _feature_is_id(df, x):
@@ -159,13 +160,6 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     if is_numeric_dtype(df[y]):
         # this check needs to be after is_bool_dtype (which is part of is_categorical_dtype) because bool is considered numeric by pandas
         return df, "regression"
-
-    if is_datetime64_any_dtype(df[y]):
-        # IDEA: show warning
-        # raise TypeError(
-        #     f"The target column {y} has the dtype {df[y].dtype} which is not supported. A possible solution might be to convert {y} to a string column"
-        # )
-        return df, "target_is_datetime"
 
     # IDEA: show warning
     # raise Exception(
@@ -329,18 +323,6 @@ def score(
 def _get_task(case_type):
     if case_type in VALID_CALCULATIONS.keys():
         return VALID_CALCULATIONS[case_type]
-    elif case_type in INVALID_CALCULATIONS:
-        return {
-            "type": case_type,
-            "is_valid_score": False,
-            "model_score": np.nan,
-            "baseline_score": np.nan,
-            "ppscore": np.nan,
-            "metric_name": None,
-            "metric_key": None,
-            "model": None,
-            "score_normalizer": None,
-        }
     else:
         raise Exception(f"case_type {case_type} is not supported")
 
