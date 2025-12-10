@@ -9,7 +9,7 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_bool_dtype,
     is_object_dtype,
-    is_categorical_dtype,
+    is_categorical_dtype as _is_categorical_dtype,
     is_string_dtype,
     is_datetime64_any_dtype,
 )
@@ -30,7 +30,7 @@ def _calculate_model_cv_score_(df, target, feature, task, cross_validation):
 
     # preprocess feature
     array = df[feature].values.reshape(-1, 1)
-    if _dtype_represents_categories(df[feature]):
+    if is_categorical_dtype(df[feature]):
         feature_input = preprocessing.OneHotEncoder().fit_transform(array)
     else:
         feature_input = array
@@ -119,18 +119,16 @@ VALID_CALCULATIONS = {
     },
 }
 
-INVALID_CALCULATIONS = [
-    "target_is_datetime",
-]
+INVALID_CALCULATIONS = ["target_is_datetime"]  # remove this
 
 
-def _dtype_represents_categories(series) -> bool:
+def is_categorical_dtype(series) -> bool:
     "Determines if the dtype of the series represents categorical values"
     return (
         is_bool_dtype(series)
         or is_object_dtype(series)
         or is_string_dtype(series)
-        or is_categorical_dtype(series)
+        or _is_categorical_dtype(series)
     )
 
 
@@ -143,13 +141,6 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     # IDEA: log.warning when values have been dropped
     df = df.dropna()
 
-    if len(df) == 0:
-        return df, "empty_dataframe_after_dropping_na"
-        # IDEA: show warning
-        # raise Exception(
-        #     "After dropping missing values, there are no valid rows left"
-        # )
-
     df = _maybe_sample(df, sample)
 
     if _feature_is_id(df, x):
@@ -159,14 +150,14 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     if category_count == 1:
         # it is helpful to separate this case in order to save unnecessary calculation time
         return df, "target_is_constant"
-    if _dtype_represents_categories(df[y]) and (category_count == len(df[y])):
+    if is_categorical_dtype(df[y]) and (category_count == len(df[y])):
         # it is important to separate this case in order to save unnecessary calculation time
         return df, "target_is_id"
 
-    if _dtype_represents_categories(df[y]):
+    if is_categorical_dtype(df[y]):
         return df, "classification"
     if is_numeric_dtype(df[y]):
-        # this check needs to be after is_bool_dtype (which is part of _dtype_represents_categories) because bool is considered numeric by pandas
+        # this check needs to be after is_bool_dtype (which is part of is_categorical_dtype) because bool is considered numeric by pandas
         return df, "regression"
 
     if is_datetime64_any_dtype(df[y]):
@@ -185,7 +176,7 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
 
 def _feature_is_id(df, x):
     "Returns Boolean if the feature column x is an ID"
-    if not _dtype_represents_categories(df[x]):
+    if not is_categorical_dtype(df[x]):
         return False
 
     category_count = df[x].value_counts().count()
