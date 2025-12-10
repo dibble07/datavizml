@@ -17,34 +17,14 @@ from pandas.api.types import (
 random_seed = 123
 
 
-def _calculate_model_cv_score_(df, target, feature, task, cross_validation):
-    "Calculates the mean model score based on cross-validation"
-
-    # shuffle the rows
-    df = df.sample(frac=1, random_state=random_seed, replace=False)
-
-    # preprocess target
-    if task["type"] == "classification":
-        df[target] = preprocessing.LabelEncoder().fit_transform(df[target])
-    target_series = df[target]
-
-    # preprocess feature
-    array = df[feature].values.reshape(-1, 1)
-    if is_categorical_dtype(df[feature]):
-        feature_input = preprocessing.OneHotEncoder().fit_transform(array)
-    else:
-        feature_input = array
-
-    # evaluate model
-    scores = cross_val_score(
-        task["model"],
-        feature_input,
-        target_series,
-        cv=cross_validation,
-        scoring=task["metric_key"],
+def is_categorical_dtype(series) -> bool:
+    "Determines if the dtype of the series represents categorical values"
+    return (
+        is_bool_dtype(series)
+        or is_object_dtype(series)
+        or is_string_dtype(series)
+        or _is_categorical_dtype(series)
     )
-
-    return scores.mean()
 
 
 def _normalized_mae_score(model_mae, naive_mae):
@@ -120,16 +100,6 @@ VALID_CALCULATIONS = {
 }
 
 
-def is_categorical_dtype(series) -> bool:
-    "Determines if the dtype of the series represents categorical values"
-    return (
-        is_bool_dtype(series)
-        or is_object_dtype(series)
-        or is_string_dtype(series)
-        or _is_categorical_dtype(series)
-    )
-
-
 def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     "Returns str with the name of the determined case based on the columns x and y"
     if x == y:
@@ -202,11 +172,34 @@ def _maybe_sample(df, sample):
     return df
 
 
-def _is_column_in_df(column, df):
-    try:
-        return column in df.columns
-    except:
-        return False
+def _calculate_model_cv_score_(df, target, feature, task, cross_validation):
+    "Calculates the mean model score based on cross-validation"
+
+    # shuffle the rows
+    df = df.sample(frac=1, random_state=random_seed, replace=False)
+
+    # preprocess target
+    if task["type"] == "classification":
+        df[target] = preprocessing.LabelEncoder().fit_transform(df[target])
+    target_series = df[target]
+
+    # preprocess feature
+    array = df[feature].values.reshape(-1, 1)
+    if is_categorical_dtype(df[feature]):
+        feature_input = preprocessing.OneHotEncoder().fit_transform(array)
+    else:
+        feature_input = array
+
+    # evaluate model
+    scores = cross_val_score(
+        task["model"],
+        feature_input,
+        target_series,
+        cv=cross_validation,
+        scoring=task["metric_key"],
+    )
+
+    return scores.mean()
 
 
 def _score(df, x, y, task, sample, cross_validation):
@@ -284,17 +277,9 @@ def score(
         raise TypeError(
             f"The 'df' argument should be a pandas.DataFrame but you passed a {type(df)}\nPlease convert your input to a pandas.DataFrame"
         )
-    if not _is_column_in_df(x, df):
-        raise ValueError(
-            f"The 'x' argument should be the name of a dataframe column but the variable that you passed is not a column in the given dataframe.\nPlease review the column name or your dataframe"
-        )
     if len(df[[x]].columns) >= 2:
         raise AssertionError(
             f"The dataframe has {len(df[[x]].columns)} columns with the same column name {x}\nPlease adjust the dataframe and make sure that only 1 column has the name {x}"
-        )
-    if not _is_column_in_df(y, df):
-        raise ValueError(
-            f"The 'y' argument should be the name of a dataframe column but the variable that you passed is not a column in the given dataframe.\nPlease review the column name or your dataframe"
         )
     if len(df[[y]].columns) >= 2:
         raise AssertionError(
@@ -383,10 +368,6 @@ def predictors(df, y, output="df", sorted=True, **kwargs):
     if not isinstance(df, pd.DataFrame):
         raise TypeError(
             f"The 'df' argument should be a pandas.DataFrame but you passed a {type(df)}\nPlease convert your input to a pandas.DataFrame"
-        )
-    if not _is_column_in_df(y, df):
-        raise ValueError(
-            f"The 'y' argument should be the name of a dataframe column but the variable that you passed is not a column in the given dataframe.\nPlease review the column name or your dataframe"
         )
     if len(df[[y]].columns) >= 2:
         raise AssertionError(
