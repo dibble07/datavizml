@@ -111,8 +111,8 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     if is_datetime64_any_dtype(df[y]):
         df[y] = df[y].astype(int) / 1e9
 
-    if sample and len(df) > sample:
-        df = df.sample(sample, random_state=random_seed, replace=False)
+    n = min(sample, len(df)) if sample else len(df)
+    df = df.sample(n=n, random_state=random_seed, replace=False)
 
     if is_categorical_dtype(df[y]):
         return df, "classification"
@@ -126,9 +126,6 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
 
 def _calculate_model_cv_score_(df, target, feature, task, cross_validation):
     "Calculates the mean model score based on cross-validation"
-
-    # shuffle the rows
-    df = df.sample(frac=1, random_state=random_seed, replace=False)
 
     # preprocess target
     if task["type"] == "classification":
