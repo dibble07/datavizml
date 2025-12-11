@@ -195,27 +195,25 @@ def score(
     }
 
 
-def _format_list_of_dicts(scores, output):
-
-    if output == "df":
-        df_columns = [
-            "x",
-            "y",
-            "ppscore",
-            "case",
-            "is_valid_score",
-            "metric",
-            "baseline_score",
-            "model_score",
-            "model",
-        ]
-        data = {column: [score[column] for score in scores] for column in df_columns}
-        scores = pd.DataFrame.from_dict(data)
+def _to_frame(scores):
+    df_columns = [
+        "x",
+        "y",
+        "ppscore",
+        "case",
+        "is_valid_score",
+        "metric",
+        "baseline_score",
+        "model_score",
+        "model",
+    ]
+    data = {column: [score[column] for score in scores] for column in df_columns}
+    scores = pd.DataFrame.from_dict(data)
 
     return scores
 
 
-def predictors(df, y, output="df", **kwargs):
+def predictors(df, y, **kwargs):
     """
     Calculate the Predictive Power Score (PPS) of all the features in the dataframe
     against a target column
@@ -226,8 +224,6 @@ def predictors(df, y, output="df", **kwargs):
         The dataframe that contains the data
     y : str
         Name of the column y which acts as the target
-    output: str - potential values: "df", "list"
-        Control the type of the output. Either return a pandas.DataFrame (df) or a list with the score dicts
     kwargs:
         Other key-word arguments that shall be forwarded to the pps.score method,
         e.g. `sample`, `cross_validation`
@@ -235,8 +231,6 @@ def predictors(df, y, output="df", **kwargs):
     Returns
     -------
     pandas.DataFrame or list of Dict
-        Either returns a tidy dataframe or a list of all the PPS dicts. This can be influenced
-        by the output argument
     """
     if not isinstance(df, pd.DataFrame):
         raise TypeError(
@@ -246,17 +240,13 @@ def predictors(df, y, output="df", **kwargs):
         raise AssertionError(
             f"The dataframe has {len(df[[y]].columns)} columns with the same column name {y}\nPlease adjust the dataframe and make sure that only 1 column has the name {y}"
         )
-    if not output in ["df", "list"]:
-        raise ValueError(
-            f"""The 'output' argument should be one of ["df", "list"] but you passed: {output}\nPlease adjust your input to one of the valid values"""
-        )
 
     scores = [score(df, column, y, **kwargs) for column in df if column != y]
 
-    return _format_list_of_dicts(scores=scores, output=output)
+    return _to_frame(scores=scores)
 
 
-def matrix(df, output="df", **kwargs):
+def matrix(df, **kwargs):
     """
     Calculate the Predictive Power Score (PPS) matrix for all columns in the dataframe
 
@@ -264,27 +254,19 @@ def matrix(df, output="df", **kwargs):
     ----------
     df : pandas.DataFrame
         The dataframe that contains the data
-    output: str - potential values: "df", "list"
-        Control the type of the output. Either return a pandas.DataFrame (df) or a list with the score dicts
     kwargs:
         Other key-word arguments that shall be forwarded to the pps.score method,
         e.g. `sample`, `cross_validation`
 
     Returns
     -------
-    pandas.DataFrame or list of Dict
-        Either returns a tidy dataframe or a list of all the PPS dicts. This can be influenced
-        by the output argument
+    pandas.DataFrame
     """
     if not isinstance(df, pd.DataFrame):
         raise TypeError(
             f"The 'df' argument should be a pandas.DataFrame but you passed a {type(df)}\nPlease convert your input to a pandas.DataFrame"
         )
-    if not output in ["df", "list"]:
-        raise ValueError(
-            f"""The 'output' argument should be one of ["df", "list"] but you passed: {output}\nPlease adjust your input to one of the valid values"""
-        )
 
     scores = [score(df, x, y, **kwargs) for x in df for y in df]
 
-    return _format_list_of_dicts(scores=scores, output=output)
+    return _to_frame(scores=scores)
