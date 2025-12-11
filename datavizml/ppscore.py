@@ -124,7 +124,7 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
         )
 
 
-def _calculate_model_cv_score_(df, target, feature, task, cross_validation):
+def _calculate_model_cv_score(df, target, feature, task, cross_validation):
     "Calculates the mean model score based on cross-validation"
 
     # preprocess target
@@ -151,20 +151,31 @@ def _calculate_model_cv_score_(df, target, feature, task, cross_validation):
     return scores.mean()
 
 
-def _score(df, x, y, task, sample, cross_validation):
+def score(
+    df,
+    x,
+    y,
+    task=None,
+    sample=5_000,
+    cross_validation=4,
+):
+    if cross_validation > len(df):
+        logger.warning(
+            f"cross_validation value ({cross_validation}) has been reduced to number of samples present ({len(df)})"
+        )
+        cross_validation = len(df)
+
     df, case_type = _determine_case_and_prepare_df(df, x, y, sample=sample)
-    task = _get_task(case_type)
+    task = VALID_CALCULATIONS[case_type]
 
     if case_type in ["classification", "regression"]:
-        model_score = _calculate_model_cv_score_(
+        model_score = _calculate_model_cv_score(
             df,
             target=y,
             feature=x,
             task=task,
             cross_validation=cross_validation,
         )
-        # IDEA: the baseline_scores do sometimes change significantly, e.g. for F1 and thus change the PPS
-        # we might want to calculate the baseline_score 10 times and use the mean in order to have less variance
         ppscore, baseline_score = task["score_normalizer"](df, y, model_score)
     else:
         model_score = task["model_score"]
@@ -179,86 +190,9 @@ def _score(df, x, y, task, sample, cross_validation):
         "is_valid_score": task["is_valid_score"],
         "metric": task["metric_name"],
         "baseline_score": baseline_score,
-        "model_score": abs(model_score),  # sklearn returns negative mae
+        "model_score": abs(model_score),
         "model": task["model"],
     }
-
-
-def score(
-    df,
-    x,
-    y,
-    task=None,
-    sample=5_000,
-    cross_validation=4,
-):
-    """
-    Calculate the Predictive Power Score (PPS) for "x predicts y"
-    The score always ranges from 0 to 1 and is data-type agnostic.
-
-    A score of 0 means that the column x cannot predict the column y better than a naive baseline model.
-    A score of 1 means that the column x can perfectly predict the column y given the model.
-    A score between 0 and 1 states the ratio of how much potential predictive power the model achieved compared to the baseline model.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Dataframe that contains the columns x and y
-    x : str
-        Name of the column x which acts as the feature
-    y : str
-        Name of the column y which acts as the target
-    sample : int or `None`
-        Number of rows for sampling. The sampling decreases the calculation time of the PPS.
-        If `None` there will be no sampling.
-    cross_validation : int
-        Number of iterations during cross-validation. This has the following implications:
-        For example, if the number is 4, then it is possible to detect patterns when there are at least 4 times the same observation. If the limit is increased, the required minimum observations also increase. This is important, because this is the limit when sklearn will throw an error and the PPS cannot be calculated
-
-    Returns
-    -------
-    Dict
-        A dict that contains multiple fields about the resulting PPS.
-        The dict enables introspection into the calculations that have been performed under the hood
-    """
-
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError(
-            f"The 'df' argument should be a pandas.DataFrame but you passed a {type(df)}\nPlease convert your input to a pandas.DataFrame"
-        )
-    if len(df[[x]].columns) >= 2:
-        raise AssertionError(
-            f"The dataframe has {len(df[[x]].columns)} columns with the same column name {x}\nPlease adjust the dataframe and make sure that only 1 column has the name {x}"
-        )
-    if len(df[[y]].columns) >= 2:
-        raise AssertionError(
-            f"The dataframe has {len(df[[y]].columns)} columns with the same column name {y}\nPlease adjust the dataframe and make sure that only 1 column has the name {y}"
-        )
-    if task is not None:
-        raise AttributeError(
-            "The attribute 'task' is no longer supported because it led to confusion and inconsistencies.\nThe task of the model is now determined based on the data types of the columns. If you want to change the task please adjust the data type of the column.\nFor more details, please refer to the README"
-        )
-    if cross_validation > len(df):
-        logger.warning(
-            f"cross_validation value ({cross_validation}) has been reduced to number of samples present ({len(df)})"
-        )
-        cross_validation = len(df)
-
-    return _score(
-        df,
-        x,
-        y,
-        task,
-        sample,
-        cross_validation,
-    )
-
-
-def _get_task(case_type):
-    if case_type in VALID_CALCULATIONS.keys():
-        return VALID_CALCULATIONS[case_type]
-    else:
-        raise Exception(f"case_type {case_type} is not supported")
 
 
 def _format_list_of_dicts(scores, output, sorted):
