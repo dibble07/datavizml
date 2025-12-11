@@ -111,7 +111,8 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     if is_datetime64_any_dtype(df[y]):
         df[y] = df[y].astype(int) / 1e9
 
-    df = _maybe_sample(df, sample)
+    if sample and len(df) > sample:
+        df = df.sample(sample, random_state=random_seed, replace=False)
 
     if is_categorical_dtype(df[y]):
         return df, "classification"
@@ -121,31 +122,6 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
         raise TypeError(
             f"Cannot determine whether {df.dtypes} should be regression or classification"
         )
-
-
-def _maybe_sample(df, sample):
-    """
-    Maybe samples the rows of the given df to have at most `sample` rows
-    If sample is `None` or falsy, there will be no sampling.
-    If the df has fewer rows than the sample, there will be no sampling.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Dataframe that might be sampled
-    sample : int or `None`
-        Number of rows to be sampled
-
-    Returns
-    -------
-    pandas.DataFrame
-        DataFrame after potential sampling
-    """
-    if sample and len(df) > sample:
-        # this is a problem if x or y have more than sample=5000 categories
-        # TODO: dont sample when the problem occurs and show warning
-        df = df.sample(sample, random_state=random_seed, replace=False)
-    return df
 
 
 def _calculate_model_cv_score_(df, target, feature, task, cross_validation):
