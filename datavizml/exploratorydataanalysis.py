@@ -189,7 +189,6 @@ class ExploratoryDataAnalysis:
                 self.__prediction_matrix = pps.predictors(
                     df=df,
                     y=self.target.name,
-                    sorted=False,
                     sample=None,
                 )
             else:

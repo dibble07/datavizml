@@ -195,15 +195,7 @@ def score(
     }
 
 
-def _format_list_of_dicts(scores, output, sorted):
-    """
-    Format list of score dicts `scores`
-    - maybe sort by ppscore
-    - maybe return pandas.Dataframe
-    - output can be one of ["df", "list"]
-    """
-    if sorted:
-        scores.sort(key=lambda item: item["ppscore"], reverse=True)
+def _format_list_of_dicts(scores, output):
 
     if output == "df":
         df_columns = [
@@ -223,7 +215,7 @@ def _format_list_of_dicts(scores, output, sorted):
     return scores
 
 
-def predictors(df, y, output="df", sorted=True, **kwargs):
+def predictors(df, y, output="df", **kwargs):
     """
     Calculate the Predictive Power Score (PPS) of all the features in the dataframe
     against a target column
@@ -236,8 +228,6 @@ def predictors(df, y, output="df", sorted=True, **kwargs):
         Name of the column y which acts as the target
     output: str - potential values: "df", "list"
         Control the type of the output. Either return a pandas.DataFrame (df) or a list with the score dicts
-    sorted: bool
-        Whether or not to sort the output dataframe/list by the ppscore
     kwargs:
         Other key-word arguments that shall be forwarded to the pps.score method,
         e.g. `sample`, `cross_validation`
@@ -260,17 +250,13 @@ def predictors(df, y, output="df", sorted=True, **kwargs):
         raise ValueError(
             f"""The 'output' argument should be one of ["df", "list"] but you passed: {output}\nPlease adjust your input to one of the valid values"""
         )
-    if not sorted in [True, False]:
-        raise ValueError(
-            f"""The 'sorted' argument should be one of [True, False] but you passed: {sorted}\nPlease adjust your input to one of the valid values"""
-        )
 
     scores = [score(df, column, y, **kwargs) for column in df if column != y]
 
-    return _format_list_of_dicts(scores=scores, output=output, sorted=sorted)
+    return _format_list_of_dicts(scores=scores, output=output)
 
 
-def matrix(df, output="df", sorted=False, **kwargs):
+def matrix(df, output="df", **kwargs):
     """
     Calculate the Predictive Power Score (PPS) matrix for all columns in the dataframe
 
@@ -280,8 +266,6 @@ def matrix(df, output="df", sorted=False, **kwargs):
         The dataframe that contains the data
     output: str - potential values: "df", "list"
         Control the type of the output. Either return a pandas.DataFrame (df) or a list with the score dicts
-    sorted: bool
-        Whether or not to sort the output dataframe/list by the ppscore
     kwargs:
         Other key-word arguments that shall be forwarded to the pps.score method,
         e.g. `sample`, `cross_validation`
@@ -300,11 +284,7 @@ def matrix(df, output="df", sorted=False, **kwargs):
         raise ValueError(
             f"""The 'output' argument should be one of ["df", "list"] but you passed: {output}\nPlease adjust your input to one of the valid values"""
         )
-    if not sorted in [True, False]:
-        raise ValueError(
-            f"""The 'sorted' argument should be one of [True, False] but you passed: {sorted}\nPlease adjust your input to one of the valid values"""
-        )
 
     scores = [score(df, x, y, **kwargs) for x in df for y in df]
 
-    return _format_list_of_dicts(scores=scores, output=output, sorted=sorted)
+    return _format_list_of_dicts(scores=scores, output=output)
