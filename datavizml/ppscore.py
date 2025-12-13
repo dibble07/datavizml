@@ -52,40 +52,6 @@ def _f1_pps(df, y, model_score):
     return ppscore, baseline
 
 
-VALID_CALCULATIONS = {
-    "regression": {
-        "type": "regression",
-        "model_score": None,
-        "baseline_score": None,
-        "ppscore": None,
-        "metric_name": "mean absolute error",
-        "metric_key": "neg_mean_absolute_error",
-        "model": tree.DecisionTreeRegressor(),
-        "score_pps": _mae_pps,
-    },
-    "classification": {
-        "type": "classification",
-        "model_score": None,
-        "baseline_score": None,
-        "ppscore": None,
-        "metric_name": "weighted F1",
-        "metric_key": "f1_weighted",
-        "model": tree.DecisionTreeClassifier(),
-        "score_pps": _f1_pps,
-    },
-    "predict_self": {
-        "type": "predict_self",
-        "model_score": 1,
-        "baseline_score": 0,
-        "ppscore": 1,
-        "metric_name": None,
-        "metric_key": None,
-        "model": None,
-        "score_pps": None,
-    },
-}
-
-
 def _calculate_model_cv_score(df, target, feature, task):
     "Calculates the mean model score based on cross-validation"
 
@@ -124,19 +90,44 @@ def score(df, x, y):
     df = df.sample(n=min(10_000, len(df)), random_state=random_seed, replace=False)
 
     if x == y:
-        case_type = "predict_self"
+        task = {
+            "type": "predict_self",
+            "model_score": 1,
+            "baseline_score": 0,
+            "ppscore": 1,
+            "metric_name": None,
+            "metric_key": None,
+            "model": None,
+            "score_pps": None,
+        }
     elif _is_categorical(df[y]):
-        case_type = "classification"
+        task = {
+            "type": "classification",
+            "model_score": None,
+            "baseline_score": None,
+            "ppscore": None,
+            "metric_name": "weighted F1",
+            "metric_key": "f1_weighted",
+            "model": tree.DecisionTreeClassifier(),
+            "score_pps": _f1_pps,
+        }
     elif _is_numeric(df[y]):
-        case_type = "regression"
+        task = {
+            "type": "regression",
+            "model_score": None,
+            "baseline_score": None,
+            "ppscore": None,
+            "metric_name": "mean absolute error",
+            "metric_key": "neg_mean_absolute_error",
+            "model": tree.DecisionTreeRegressor(),
+            "score_pps": _mae_pps,
+        }
     else:
         raise TypeError(
             f"Cannot determine whether {df.dtypes} should be regression or classification"
         )
 
-    task = VALID_CALCULATIONS[case_type]
-
-    if case_type in ["classification", "regression"]:
+    if task["type"] in ["classification", "regression"]:
         model_score = _calculate_model_cv_score(
             df,
             target=y,
@@ -153,7 +144,7 @@ def score(df, x, y):
         "x": x,
         "y": y,
         "ppscore": ppscore,
-        "case": case_type,
+        "case": task["type"],
         "metric": task["metric_name"],
         "baseline_score": baseline_score,
         "model_score": abs(model_score),
