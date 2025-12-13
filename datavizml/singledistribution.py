@@ -338,7 +338,6 @@ class SingleDistribution:
                 df=df,
                 x=self.feature.name,
                 y=self.target.name,
-                sample=None,
             )["ppscore"]
             self.__target_score_type = "PPS"
         else:

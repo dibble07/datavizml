@@ -100,7 +100,7 @@ VALID_CALCULATIONS = {
 }
 
 
-def _determine_case_and_prepare_df(df, x, y, sample=5_000):
+def _determine_case_and_prepare_df(df, x, y):
     "Returns str with the name of the determined case based on the columns x and y"
     if x == y:
         return df, "predict_itself"
@@ -111,8 +111,7 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
     if is_datetime64_any_dtype(df[y]):
         df[y] = df[y].astype(int) / 1e9
 
-    n = min(sample, len(df)) if sample else len(df)
-    df = df.sample(n=n, random_state=random_seed, replace=False)
+    df = df.sample(n=min(10_000, len(df)), random_state=random_seed, replace=False)
 
     if is_categorical_dtype(df[y]):
         return df, "classification"
@@ -124,7 +123,7 @@ def _determine_case_and_prepare_df(df, x, y, sample=5_000):
         )
 
 
-def _calculate_model_cv_score(df, target, feature, task, cross_validation):
+def _calculate_model_cv_score(df, target, feature, task):
     "Calculates the mean model score based on cross-validation"
 
     # preprocess target
@@ -144,28 +143,15 @@ def _calculate_model_cv_score(df, target, feature, task, cross_validation):
         task["model"],
         feature_input,
         target_series,
-        cv=cross_validation,
+        cv=min(4, len(df)),
         scoring=task["metric_key"],
     )
 
     return scores.mean()
 
 
-def score(
-    df,
-    x,
-    y,
-    task=None,
-    sample=5_000,
-    cross_validation=4,
-):
-    if cross_validation > len(df):
-        logger.warning(
-            f"cross_validation value ({cross_validation}) has been reduced to number of samples present ({len(df)})"
-        )
-        cross_validation = len(df)
-
-    df, case_type = _determine_case_and_prepare_df(df, x, y, sample=sample)
+def score(df, x, y):
+    df, case_type = _determine_case_and_prepare_df(df, x, y)
     task = VALID_CALCULATIONS[case_type]
 
     if case_type in ["classification", "regression"]:
@@ -174,7 +160,6 @@ def score(
             target=y,
             feature=x,
             task=task,
-            cross_validation=cross_validation,
         )
         ppscore, baseline_score = task["score_normalizer"](df, y, model_score)
     else:
@@ -195,78 +180,9 @@ def score(
     }
 
 
-def _to_frame(scores):
-    df_columns = [
-        "x",
-        "y",
-        "ppscore",
-        "case",
-        "is_valid_score",
-        "metric",
-        "baseline_score",
-        "model_score",
-        "model",
-    ]
-    data = {column: [score[column] for score in scores] for column in df_columns}
-    scores = pd.DataFrame.from_dict(data)
-
-    return scores
-
-
-def predictors(df, y, **kwargs):
-    """
-    Calculate the Predictive Power Score (PPS) of all the features in the dataframe
-    against a target column
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The dataframe that contains the data
-    y : str
-        Name of the column y which acts as the target
-    kwargs:
-        Other key-word arguments that shall be forwarded to the pps.score method,
-        e.g. `sample`, `cross_validation`
-
-    Returns
-    -------
-    pandas.DataFrame or list of Dict
-    """
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError(
-            f"The 'df' argument should be a pandas.DataFrame but you passed a {type(df)}\nPlease convert your input to a pandas.DataFrame"
-        )
-    if len(df[[y]].columns) >= 2:
-        raise AssertionError(
-            f"The dataframe has {len(df[[y]].columns)} columns with the same column name {y}\nPlease adjust the dataframe and make sure that only 1 column has the name {y}"
-        )
-
-    scores = [score(df, column, y, **kwargs) for column in df if column != y]
-
-    return _to_frame(scores=scores)
-
-
-def matrix(df, **kwargs):
-    """
-    Calculate the Predictive Power Score (PPS) matrix for all columns in the dataframe
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The dataframe that contains the data
-    kwargs:
-        Other key-word arguments that shall be forwarded to the pps.score method,
-        e.g. `sample`, `cross_validation`
-
-    Returns
-    -------
-    pandas.DataFrame
-    """
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError(
-            f"The 'df' argument should be a pandas.DataFrame but you passed a {type(df)}\nPlease convert your input to a pandas.DataFrame"
-        )
-
-    scores = [score(df, x, y, **kwargs) for x in df for y in df]
-
-    return _to_frame(scores=scores)
+def predictors(df, y=None):
+    if y:
+        scores = [score(df, x, y) for x in df]
+    else:
+        scores = [score(df, x, y) for x in df for y in df]
+    return pd.DataFrame(scores)
