@@ -334,11 +334,11 @@ class SingleDistribution:
                 df = pd.concat([self.feature, self.target], axis=1)
 
             ## calculate score
-            self.__target_score = pps.score(
+            self.__target_score = pps.predictors(
                 df=df,
                 x=self.feature.name,
                 y=self.target.name,
-            )["ppscore"]
+            ).iloc[0]["ppscore"]
             self.__target_score_type = "PPS"
         else:
             self.__target_score = np.nan

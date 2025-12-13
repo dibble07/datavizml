@@ -53,7 +53,7 @@ def _f1_pps(df, y, model_score):
 
 
 def _calculate_model_cv_score(df, target, feature, task):
-    "Calculates the mean model score based on cross-validation"
+    "Calculates the mean cross-validated model score"
 
     # preprocess target
     if task["type"] == "classification":
@@ -79,7 +79,7 @@ def _calculate_model_cv_score(df, target, feature, task):
     return scores.mean()
 
 
-def score(df, x, y):
+def _score(df, x, y):
 
     df = df[[x, y]]
     df = df.dropna()
@@ -152,9 +152,8 @@ def score(df, x, y):
     }
 
 
-def predictors(df, y=None):
-    if y:
-        scores = [score(df, x, y) for x in df]
-    else:
-        scores = [score(df, x, y) for x in df for y in df]
+def predictors(df, x=None, y=None):
+    x_all = df.columns.tolist() if x is None else [x]
+    y_all = df.columns.tolist() if y is None else [y]
+    scores = [_score(df, x_, y_) for x_ in x_all for y_ in y_all]
     return pd.DataFrame(scores)
