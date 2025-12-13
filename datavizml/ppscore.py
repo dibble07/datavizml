@@ -31,15 +31,15 @@ def _is_numeric(series) -> bool:
     return is_numeric_dtype(series) and not is_bool_dtype(series)
 
 
-def _mae_normaliser(df, y, model_score):
+def _mae_pps(df, y, model_score):
     "Calculates the baseline score for y using MAE and derives the PPS"
     df["naive"] = df[y].median()
     baseline = mean_absolute_error(df[y], df["naive"])
-    ppscore = 0 if abs(model_score) > baseline else 1 - (abs(model_score) / baseline)
+    ppscore = max(0, 1 - (abs(model_score) / baseline))
     return ppscore, baseline
 
 
-def _f1_normaliser(df, y, model_score):
+def _f1_pps(df, y, model_score):
     "Calculates the baseline score for y using F1 score and derives the PPS"
     df["truth"] = preprocessing.LabelEncoder().fit_transform(df[y])
     df["most_common_value"] = df["truth"].value_counts().index[0]
@@ -48,7 +48,7 @@ def _f1_normaliser(df, y, model_score):
         f1_score(df["truth"], df["most_common_value"], average="weighted"),
         f1_score(df["truth"], truth_shuffled, average="weighted"),
     )
-    ppscore = 0 if model_score < baseline else (model_score - baseline) / (1 - baseline)
+    ppscore = max(0, (model_score - baseline) / (1 - baseline))
     return ppscore, baseline
 
 
@@ -62,7 +62,7 @@ VALID_CALCULATIONS = {
         "metric_name": "mean absolute error",
         "metric_key": "neg_mean_absolute_error",
         "model": tree.DecisionTreeRegressor(),
-        "score_normaliser": _mae_normaliser,
+        "score_pps": _mae_pps,
     },
     "classification": {
         "type": "classification",
@@ -73,7 +73,7 @@ VALID_CALCULATIONS = {
         "metric_name": "weighted F1",
         "metric_key": "f1_weighted",
         "model": tree.DecisionTreeClassifier(),
-        "score_normaliser": _f1_normaliser,
+        "score_pps": _f1_pps,
     },
     "predict_self": {
         "type": "predict_self",
@@ -84,7 +84,7 @@ VALID_CALCULATIONS = {
         "metric_name": None,
         "metric_key": None,
         "model": None,
-        "score_normaliser": None,
+        "score_pps": None,
     },
 }
 
@@ -150,7 +150,7 @@ def score(df, x, y):
             feature=x,
             task=task,
         )
-        ppscore, baseline_score = task["score_normaliser"](df, y, model_score)
+        ppscore, baseline_score = task["score_pps"](df, y, model_score)
     else:
         model_score = task["model_score"]
         baseline_score = task["baseline_score"]
