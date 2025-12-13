@@ -55,7 +55,6 @@ def _f1_pps(df, y, model_score):
 VALID_CALCULATIONS = {
     "regression": {
         "type": "regression",
-        "is_valid_score": True,
         "model_score": None,
         "baseline_score": None,
         "ppscore": None,
@@ -66,7 +65,6 @@ VALID_CALCULATIONS = {
     },
     "classification": {
         "type": "classification",
-        "is_valid_score": True,
         "model_score": None,
         "baseline_score": None,
         "ppscore": None,
@@ -77,7 +75,6 @@ VALID_CALCULATIONS = {
     },
     "predict_self": {
         "type": "predict_self",
-        "is_valid_score": True,
         "model_score": 1,
         "baseline_score": 0,
         "ppscore": 1,
@@ -87,29 +84,6 @@ VALID_CALCULATIONS = {
         "score_pps": None,
     },
 }
-
-
-def _determine_case_and_prepare_df(df, x, y):
-    "Returns str with the name of the determined case based on the columns x and y"
-    if x == y:
-        return df, "predict_self"
-
-    df = df[[x, y]]
-    df = df.dropna()
-
-    if is_datetime64_any_dtype(df[y]):
-        df[y] = df[y].astype(int) / 1e9
-
-    df = df.sample(n=min(10_000, len(df)), random_state=random_seed, replace=False)
-
-    if _is_categorical(df[y]):
-        return df, "classification"
-    if _is_numeric(df[y]):
-        return df, "regression"
-    else:
-        raise TypeError(
-            f"Cannot determine whether {df.dtypes} should be regression or classification"
-        )
 
 
 def _calculate_model_cv_score(df, target, feature, task):
@@ -140,7 +114,26 @@ def _calculate_model_cv_score(df, target, feature, task):
 
 
 def score(df, x, y):
-    df, case_type = _determine_case_and_prepare_df(df, x, y)
+
+    df = df[[x, y]]
+    df = df.dropna()
+
+    if is_datetime64_any_dtype(df[y]):
+        df[y] = df[y].astype(int) / 1e9
+
+    df = df.sample(n=min(10_000, len(df)), random_state=random_seed, replace=False)
+
+    if x == y:
+        case_type = "predict_self"
+    elif _is_categorical(df[y]):
+        case_type = "classification"
+    elif _is_numeric(df[y]):
+        case_type = "regression"
+    else:
+        raise TypeError(
+            f"Cannot determine whether {df.dtypes} should be regression or classification"
+        )
+
     task = VALID_CALCULATIONS[case_type]
 
     if case_type in ["classification", "regression"]:
@@ -161,7 +154,6 @@ def score(df, x, y):
         "y": y,
         "ppscore": ppscore,
         "case": case_type,
-        "is_valid_score": task["is_valid_score"],
         "metric": task["metric_name"],
         "baseline_score": baseline_score,
         "model_score": abs(model_score),
