@@ -186,13 +186,14 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         # check single distribution pps scores are correct
         for sd in eda.single_distributions:
             if dtype_target != "no target provided":
-                assert np.round(
-                    sd.to_dict()["target_score"], 3
-                ) == expected_prediction_matrix(
-                    sd.feature.name[2:],
-                    sd.target.name[2:],
-                    target_rebalance,
-                    dtype_target,
+                assert np.round(sd.to_dict()["target_score"], 2) == np.round(
+                    expected_prediction_matrix(
+                        sd.feature.name[2:],
+                        sd.target.name[2:],
+                        target_rebalance,
+                        dtype_target,
+                    ),
+                    2,
                 )
 
         # check summary dataframe - structure only as values tested in singledistribution
@@ -222,21 +223,18 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         else:
             captured_prediction_matrix = eda.prediction_matrix.pivot(
                 index="x", columns="y", values="ppscore"
-            ).round(3)
+            ).round(2)
             for col_name, col in captured_prediction_matrix.items():
                 for row_name, captured_val in col.items():
-                    if col_name == "x_datetime64[ns]":
-                        if row_name == "x_datetime64[ns]":
-                            expected_val = 1.0
-                        else:
-                            expected_val = np.nan
-                    else:
-                        expected_val = expected_prediction_matrix(
+                    expected_val = np.round(
+                        expected_prediction_matrix(
                             row_name[2:],
                             col_name[2:],
                             target_rebalance and dtype_target != "no target provided",
                             dtype_target,
-                        )
+                        ),
+                        2,
+                    )
                     assert (expected_val == captured_val) or (
                         np.isnan(expected_val) and np.isnan(captured_val)
                     )

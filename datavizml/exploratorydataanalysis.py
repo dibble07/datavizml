@@ -3,11 +3,11 @@ from typing import Any, Dict, Optional, Union
 import matplotlib
 import numpy as np
 import pandas as pd
-import ppscore as pps
 import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
+from datavizml import ppscore as pps
 from datavizml import singledistribution as sd
 from datavizml import utils
 
@@ -179,20 +179,15 @@ class ExploratoryDataAnalysis:
 
         # calculate full matrix
         if self.__prediction_matrix_full:
-            self.__prediction_matrix = pps.matrix(
+            self.__prediction_matrix = pps.calculate(
                 df=df,
-                sample=None,
-                invalid_score=np.nan,
             )
         else:
             # calculate reduced matrix
             if self.__has_target:
-                self.__prediction_matrix = pps.predictors(
+                self.__prediction_matrix = pps.calculate(
                     df=df,
                     y=self.target.name,
-                    sorted=False,
-                    sample=None,
-                    invalid_score=np.nan,
                 )
             else:
                 self.__prediction_matrix = None

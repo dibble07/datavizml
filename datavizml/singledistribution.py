@@ -4,11 +4,11 @@ from typing import Any, Dict, Optional, Union
 import matplotlib
 import numpy as np
 import pandas as pd
-import ppscore as pps
 import scipy
 from matplotlib import dates, ticker
 from statsmodels.stats.proportion import proportion_confint
 
+from datavizml import ppscore as pps
 from datavizml import utils
 
 
@@ -334,13 +334,11 @@ class SingleDistribution:
                 df = pd.concat([self.feature, self.target], axis=1)
 
             ## calculate score
-            self.__target_score = pps.score(
+            self.__target_score = pps.calculate(
                 df=df,
                 x=self.feature.name,
                 y=self.target.name,
-                sample=None,
-                invalid_score=np.nan,
-            )["ppscore"]
+            ).iloc[0]["ppscore"]
             self.__target_score_type = "PPS"
         else:
             self.__target_score = np.nan
