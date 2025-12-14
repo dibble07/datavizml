@@ -74,7 +74,7 @@ def test_transforms():
 
 
 @pytest.mark.parametrize(
-    "target_rebalance",
+    "target_imbalanced",
     [True, False],
 )
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_transforms():
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
 )
 @pytest.mark.parametrize("type_data", ["dataframe", "series"])
-def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
+def test_combinations(type_data, dtype_target, matrix_full, target_imbalanced):
     # initialise raw values - include a missing value and a modal value
     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
@@ -156,7 +156,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
                 data=x_final,
                 ncols=2,
                 target=y_final,
-                target_rebalance=target_rebalance,
+                target_imbalanced=target_imbalanced,
                 prediction_matrix_full=matrix_full,
             )
         )
@@ -186,14 +186,13 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         # check single distribution pps scores are correct
         for sd in eda.single_distributions:
             if dtype_target != "no target provided":
-                assert np.round(sd.to_dict()["target_score"], 2) == np.round(
-                    expected_prediction_matrix(
-                        sd.feature.name[2:],
-                        sd.target.name[2:],
-                        target_rebalance,
-                        dtype_target,
-                    ),
-                    2,
+                assert np.round(
+                    sd.to_dict()["target_score"], 3
+                ) == expected_prediction_matrix(
+                    sd.feature.name[2:],
+                    sd.target.name[2:],
+                    target_imbalanced,
+                    dtype_target,
                 )
 
         # check summary dataframe - structure only as values tested in singledistribution
@@ -223,17 +222,14 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
         else:
             captured_prediction_matrix = eda.prediction_matrix.pivot(
                 index="x", columns="y", values="ppscore"
-            ).round(2)
+            ).round(3)
             for col_name, col in captured_prediction_matrix.items():
                 for row_name, captured_val in col.items():
-                    expected_val = np.round(
-                        expected_prediction_matrix(
-                            row_name[2:],
-                            col_name[2:],
-                            target_rebalance and dtype_target != "no target provided",
-                            dtype_target,
-                        ),
-                        2,
+                    expected_val = expected_prediction_matrix(
+                        row_name[2:],
+                        col_name[2:],
+                        target_imbalanced and dtype_target != "no target provided",
+                        dtype_target,
                     )
                     assert (expected_val == captured_val) or (
                         np.isnan(expected_val) and np.isnan(captured_val)

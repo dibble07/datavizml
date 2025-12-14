@@ -25,8 +25,8 @@ class SingleDistribution:
     :type target: pandas Series, optional
     :param target_score: Precomputed score to avoid recalculation
     :type target_score: float, optional
-    :param target_rebalance: reduce class imbalance in target score
-    :type target_rebalance: bool, optional
+    :param target_imbalanced: Calculate PPS using imbalance agnostic metric
+    :type target_imbalanced: bool, optional
     :param binning_threshold: Maximum number of distinct values in the column before binning, defaults to 12
     :type binning_threshold: int, optional
     :param metric: Metric used for prevalence, "count" or "prop" (default)
@@ -45,7 +45,7 @@ class SingleDistribution:
         feature_deskew: Union[bool, list, str] = False,
         target: Optional[Any] = None,
         target_score: Optional[float] = None,
-        target_rebalance: bool = False,
+        target_imbalanced: bool = False,
         binning_threshold: Optional[int] = None,
         metric: str = "prop",
     ) -> None:
@@ -57,7 +57,7 @@ class SingleDistribution:
         self.__has_target = target is not None
         if self.__has_target:
             self.target = target
-            self.__target_rebalance = target_rebalance
+            self.__target_imbalanced = target_imbalanced
             if self.feature.name == self.target.name:
                 # clear target if the same as feature
                 del self.__target
@@ -324,18 +324,11 @@ class SingleDistribution:
     def calculate_target_score(self) -> None:
         """Calculate the score for the feature based on its predictive power"""
         if self.__has_target:
-            # rebalance classes
-            if self.__target_type == "classification" and self.__target_rebalance:
-                x_balanced, y_balanced = utils.class_rebalance(
-                    self.feature, self.target
-                )
-                df = pd.concat([x_balanced, y_balanced], axis=1)
-            else:
-                df = pd.concat([self.feature, self.target], axis=1)
-
             ## calculate score
             self.__target_score = pps.calculate(
-                df=df,
+                df=pd.concat([self.feature, self.target], axis=1),
+                imbalanced=self.__target_type == "classification"
+                and self.__target_imbalanced,
                 x=self.feature.name,
                 y=self.target.name,
             ).iloc[0]["ppscore"]

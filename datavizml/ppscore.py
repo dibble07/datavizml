@@ -40,14 +40,17 @@ def _mae_pps(df: pd.DataFrame, y: str, model_score: float) -> Tuple[float, float
     return ppscore, baseline_score
 
 
-def _f1_pps(df: pd.DataFrame, y: str, model_score: float) -> Tuple[float, float]:
+def _f1_pps(
+    df: pd.DataFrame, imbalanced: bool, y: str, model_score: float
+) -> Tuple[float, float]:
     "Calculates the baseline score for y using F1 score and derives the PPS"
+    average = "macro" if imbalanced else "weighted"
     df["truth"] = preprocessing.LabelEncoder().fit_transform(df[y])
     df["mode"] = df["truth"].mode().values[0]
     truth_shuffled = df["truth"].sample(frac=1, random_state=random_seed)
     baseline_score = max(
-        f1_score(df["truth"], df["mode"], average="weighted"),
-        f1_score(df["truth"], truth_shuffled, average="weighted"),
+        f1_score(df["truth"], df["mode"], average=average),
+        f1_score(df["truth"], truth_shuffled, average=average),
     )
     ppscore = max(0, (model_score - baseline_score) / (1 - baseline_score))
     return ppscore, baseline_score
@@ -85,7 +88,9 @@ def _calculate_model_cv_score(
     return scores.mean()
 
 
-def _calculate_single(df: pd.DataFrame, x: str, y: str) -> Dict[str, Any]:
+def _calculate_single(
+    df: pd.DataFrame, imbalanced: bool, x: str, y: str
+) -> Dict[str, Any]:
     "Calculates the ppscore for a single feature target pair"
 
     # extract feature and target columns and drop null rows
@@ -103,7 +108,7 @@ def _calculate_single(df: pd.DataFrame, x: str, y: str) -> Dict[str, Any]:
         ppscore, model_score, baseline_score = 1.0, 1.0, 0.0
     elif _is_categorical(df[y]):
         case = "classification"
-        metric = "f1_weighted"
+        metric = "f1_macro" if imbalanced else "f1_weighted"
         model_score = _calculate_model_cv_score(
             df,
             x=x,
@@ -112,7 +117,7 @@ def _calculate_single(df: pd.DataFrame, x: str, y: str) -> Dict[str, Any]:
             model=tree.DecisionTreeClassifier(),
             scoring=metric,
         )
-        ppscore, baseline_score = _f1_pps(df, y, model_score)
+        ppscore, baseline_score = _f1_pps(df, imbalanced, y, model_score)
     elif _is_numeric(df[y]):
         case = "regression"
         metric = "neg_mean_absolute_error"
@@ -141,6 +146,7 @@ def _calculate_single(df: pd.DataFrame, x: str, y: str) -> Dict[str, Any]:
 
 def calculate(
     df: pd.DataFrame,
+    imbalanced: bool,
     x: Optional[str] = None,
     y: Optional[str] = None,
 ) -> pd.DataFrame:
@@ -148,6 +154,8 @@ def calculate(
 
     :param df: Raw data
     :type df: pandas.DataFrame
+    :param imbalanced: Calculate score using class imbalance agnostic metric
+    :type imbalanced: bool
     :param x: column name of feature
     :type x: str, Optional
     :param y: column name of target
@@ -166,7 +174,7 @@ def calculate(
 
     # calculate pps scores
     scores = pd.DataFrame(
-        [_calculate_single(df, x_, y_) for x_ in x_all for y_ in y_all]
+        [_calculate_single(df, imbalanced, x_, y_) for x_ in x_all for y_ in y_all]
     )
 
     return scores
