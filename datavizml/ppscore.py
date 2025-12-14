@@ -34,9 +34,9 @@ def _is_numeric(series) -> bool:
 def _mae_pps(df, y, model_score):
     "Calculates the baseline score for y using MAE and derives the PPS"
     df["median"] = df[y].median()
-    baseline = mean_absolute_error(df[y], df["median"])
-    ppscore = max(0, 1 - (abs(model_score) / baseline))
-    return ppscore, baseline
+    baseline_score = mean_absolute_error(df[y], df["median"])
+    ppscore = max(0, 1 - (abs(model_score) / baseline_score))
+    return ppscore, baseline_score
 
 
 def _f1_pps(df, y, model_score):
@@ -44,34 +44,32 @@ def _f1_pps(df, y, model_score):
     df["truth"] = preprocessing.LabelEncoder().fit_transform(df[y])
     df["mode"] = df["truth"].mode().values[0]
     truth_shuffled = df["truth"].sample(frac=1, random_state=random_seed)
-    baseline = max(
+    baseline_score = max(
         f1_score(df["truth"], df["mode"], average="weighted"),
         f1_score(df["truth"], truth_shuffled, average="weighted"),
     )
-    ppscore = max(0, (model_score - baseline) / (1 - baseline))
-    return ppscore, baseline
+    ppscore = max(0, (model_score - baseline_score) / (1 - baseline_score))
+    return ppscore, baseline_score
 
 
-def _calculate_model_cv_score(df, target, feature, case, model, scoring):
+def _calculate_model_cv_score(df, x, y, case, model, scoring):
     "Calculates the mean cross-validated model score"
 
     # preprocess target
+    y_series = df[y]
     if case == "classification":
-        df[target] = preprocessing.LabelEncoder().fit_transform(df[target])
-    target_series = df[target]
+        y_series = preprocessing.LabelEncoder().fit_transform(y_series)
 
     # preprocess feature
-    array = df[feature].values.reshape(-1, 1)
-    if _is_categorical(df[feature]):
-        feature_input = preprocessing.OneHotEncoder().fit_transform(array)
-    else:
-        feature_input = array
+    x_array = df[x].values.reshape(-1, 1)
+    if _is_categorical(df[x]):
+        x_array = preprocessing.OneHotEncoder().fit_transform(x_array)
 
     # evaluate model
     scores = cross_val_score(
         model,
-        feature_input,
-        target_series,
+        x_array,
+        y_series,
         cv=min(4, len(df)),
         scoring=scoring,
     )
@@ -80,6 +78,7 @@ def _calculate_model_cv_score(df, target, feature, case, model, scoring):
 
 
 def _calculate_single(df, x, y):
+    "Calculates the ppscore for a single feature target pair"
 
     # extract feature and target columns and drop null rows
     df = df[[x, y]]
@@ -92,30 +91,30 @@ def _calculate_single(df, x, y):
     # identify task type and calculate scores
     if x == y:
         case = "predict_self"
-        metric_key = None
+        metric = None
         ppscore, model_score, baseline_score = 1, 1, 0
     elif _is_categorical(df[y]):
         case = "classification"
-        metric_key = "f1_weighted"
+        metric = "f1_weighted"
         model_score = _calculate_model_cv_score(
             df,
-            target=y,
-            feature=x,
+            x=x,
+            y=y,
             case=case,
             model=tree.DecisionTreeClassifier(),
-            scoring=metric_key,
+            scoring=metric,
         )
         ppscore, baseline_score = _f1_pps(df, y, model_score)
     elif _is_numeric(df[y]):
         case = "regression"
-        metric_key = "neg_mean_absolute_error"
+        metric = "neg_mean_absolute_error"
         model_score = _calculate_model_cv_score(
             df,
-            target=y,
-            feature=x,
+            x=x,
+            y=y,
             case=case,
             model=tree.DecisionTreeRegressor(),
-            scoring=metric_key,
+            scoring=metric,
         )
         ppscore, baseline_score = _mae_pps(df, y, model_score)
     else:
@@ -126,13 +125,25 @@ def _calculate_single(df, x, y):
         "y": y,
         "ppscore": ppscore,
         "case": case,
-        "metric": metric_key,
+        "metric": metric,
         "baseline_score": baseline_score,
         "model_score": abs(model_score),
     }
 
 
 def calculate(df, x=None, y=None):
+    """Calculates the ppscore for all feature target pairs
+
+    :param df: Raw data
+    :type df: pandas.DataFrame
+    :param x: column names to consider as features
+    :type x: list, Optional
+    :param y: column names to consider as targets
+    :type y: list, Optional
+
+    :return: The ppscore values and relevant calculation information for each feature-target pair
+    :rtype: pandas.DataFrame
+    """
 
     # ensure feature and target names are lists
     x_all = df.columns.tolist() if x is None else [x]
