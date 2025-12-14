@@ -52,11 +52,11 @@ def _f1_pps(df, y, model_score):
     return ppscore, baseline
 
 
-def _calculate_model_cv_score(df, target, feature, task):
+def _calculate_model_cv_score(df, target, feature, case, model, scoring):
     "Calculates the mean cross-validated model score"
 
     # preprocess target
-    if task["type"] == "classification":
+    if case == "classification":
         df[target] = preprocessing.LabelEncoder().fit_transform(df[target])
     target_series = df[target]
 
@@ -69,84 +69,66 @@ def _calculate_model_cv_score(df, target, feature, task):
 
     # evaluate model
     scores = cross_val_score(
-        task["model"],
+        model,
         feature_input,
         target_series,
         cv=min(4, len(df)),
-        scoring=task["metric_key"],
+        scoring=scoring,
     )
 
     return scores.mean()
 
 
-def _score(df, x, y):
+def _calculate_single(df, x, y):
 
+    # extract feature and target columns and drop null rows
     df = df[[x, y]]
     df = df.dropna()
 
+    # convert datetime targets to compatible dtype
     if is_datetime64_any_dtype(df[y]):
         df[y] = df[y].astype(int) / 1e9
 
+    # identify task type and calculate scores
     if x == y:
-        task = {
-            "type": "predict_self",
-            "model_score": 1,
-            "baseline_score": 0,
-            "ppscore": 1,
-            "metric_name": None,
-            "metric_key": None,
-            "model": None,
-            "score_pps": None,
-        }
+        case = "predict_self"
+        metric_key = None
+        ppscore, model_score, baseline_score = 1, 1, 0
     elif _is_categorical(df[y]):
-        task = {
-            "type": "classification",
-            "model_score": None,
-            "baseline_score": None,
-            "ppscore": None,
-            "metric_name": "weighted F1",
-            "metric_key": "f1_weighted",
-            "model": tree.DecisionTreeClassifier(),
-            "score_pps": _f1_pps,
-        }
-    elif _is_numeric(df[y]):
-        task = {
-            "type": "regression",
-            "model_score": None,
-            "baseline_score": None,
-            "ppscore": None,
-            "metric_name": "mean absolute error",
-            "metric_key": "neg_mean_absolute_error",
-            "model": tree.DecisionTreeRegressor(),
-            "score_pps": _mae_pps,
-        }
-    else:
-        raise TypeError(
-            f"Cannot determine whether {df.dtypes} should be regression or classification"
-        )
-
-    if task["type"] in ["classification", "regression"]:
+        case = "classification"
+        metric_key = "f1_weighted"
         model_score = _calculate_model_cv_score(
             df,
             target=y,
             feature=x,
-            task=task,
+            case=case,
+            model=tree.DecisionTreeClassifier(),
+            scoring=metric_key,
         )
-        ppscore, baseline_score = task["score_pps"](df, y, model_score)
+        ppscore, baseline_score = _f1_pps(df, y, model_score)
+    elif _is_numeric(df[y]):
+        case = "regression"
+        metric_key = "neg_mean_absolute_error"
+        model_score = _calculate_model_cv_score(
+            df,
+            target=y,
+            feature=x,
+            case=case,
+            model=tree.DecisionTreeRegressor(),
+            scoring=metric_key,
+        )
+        ppscore, baseline_score = _mae_pps(df, y, model_score)
     else:
-        model_score = task["model_score"]
-        baseline_score = task["baseline_score"]
-        ppscore = task["ppscore"]
+        raise TypeError(f"Cannot determine task for columns {x} and {y}")
 
     return {
         "x": x,
         "y": y,
         "ppscore": ppscore,
-        "case": task["type"],
-        "metric": task["metric_name"],
+        "case": case,
+        "metric": metric_key,
         "baseline_score": baseline_score,
         "model_score": abs(model_score),
-        "model": task["model"],
     }
 
 
@@ -160,6 +142,8 @@ def calculate(df, x=None, y=None):
     df = df.sample(n=len(df), random_state=random_seed, replace=False)
 
     # calculate pps scores
-    scores = pd.DataFrame([_score(df, x_, y_) for x_ in x_all for y_ in y_all])
+    scores = pd.DataFrame(
+        [_calculate_single(df, x_, y_) for x_ in x_all for y_ in y_all]
+    )
 
     return scores
