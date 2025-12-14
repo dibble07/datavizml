@@ -18,7 +18,7 @@ expected_prediction_matrix_raw = pd.DataFrame(
 
 expected_prediction_matrix_balanced_multi = pd.DataFrame(
     data=[
-        [1.000, 0.043, 0.497, 0.497, 0.497, 0.043],
+        [1.000, 0.12, 0.63, 0.63, 0.63, 0.12],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
@@ -31,7 +31,7 @@ expected_prediction_matrix_balanced_multi = pd.DataFrame(
 
 expected_prediction_matrix_balanced_binary = pd.DataFrame(
     data=[
-        [1.000, 0.2254, 0.625, 0.625, 0.625, 0.2254],
+        [1.000, 0.12, 0.63, 0.63, 0.63, 0.12],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],

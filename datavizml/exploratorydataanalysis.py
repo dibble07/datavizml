@@ -23,8 +23,8 @@ class ExploratoryDataAnalysis:
     :type data_deskew: bool for all features, string or list of strings for selective features, dict of column names and transforms for selective features and transforms, optional
     :param target: Target to be predicted
     :type target: pandas Series, optional
-    :param target_rebalance: Rebalance target
-    :type target_rebalance: bool, optional
+    :param target_imbalanced: Calculate PPS using imbalance agnostic metric
+    :type target_imbalanced: bool, optional
     :param metric: Metric used for prevalence, "count" or "prop" (default)
     :type metric: string, optional
     :param prediction_matrix_full: Full or reduced prediction matrix
@@ -44,7 +44,7 @@ class ExploratoryDataAnalysis:
         ncols: int,
         data_deskew: Union[bool, dict, list, str] = False,
         target: Optional[Any] = None,
-        target_rebalance: bool = False,
+        target_imbalanced: bool = False,
         metric: str = "prop",
         prediction_matrix_full: bool = False,
         figure_width: Union[int, float] = FIGURE_WIDTH,
@@ -59,7 +59,7 @@ class ExploratoryDataAnalysis:
         self.__has_target = target is not None
         if self.__has_target:
             self.target = target
-            self.__target_rebalance = target_rebalance
+            self.__target_imbalanced = target_imbalanced
         self.__ncols = ncols
         self.__prediction_matrix_full = prediction_matrix_full
         self.__figure_width = figure_width
@@ -167,26 +167,26 @@ class ExploratoryDataAnalysis:
         "Calculate prediction matrix for specified combinations of features/targets"
         # combine feature and target
         if self.__has_target:
-            # rebalance classes
-            if self.__target_type == "classification" and self.__target_rebalance:
-                x_balanced, y_balanced = utils.class_rebalance(self.data, self.target)
-                df = pd.concat([x_balanced, y_balanced], axis=1)
-            else:
-                df = pd.concat([self.data, self.target], axis=1)
-
+            df = pd.concat([self.data, self.target], axis=1)
+            imbalanced = (
+                self.__target_type == "classification" and self.__target_imbalanced
+            )
         else:
             df = self.data
+            imbalanced = False
 
         # calculate full matrix
         if self.__prediction_matrix_full:
             self.__prediction_matrix = pps.calculate(
                 df=df,
+                imbalanced=imbalanced,
             )
         else:
             # calculate reduced matrix
             if self.__has_target:
                 self.__prediction_matrix = pps.calculate(
                     df=df,
+                    imbalanced=imbalanced,
                     y=self.target.name,
                 )
             else:

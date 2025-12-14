@@ -97,7 +97,7 @@ def test_deskew_symmetrical():
     [True, False],
 )
 @pytest.mark.parametrize(
-    "target_rebalance",
+    "target_imbalanced",
     [True, False],
 )
 @pytest.mark.parametrize(
@@ -108,7 +108,7 @@ def test_deskew_symmetrical():
     "dtype_feature",
     ["Int64", "Float64", "string", "category", "boolean", "datetime64[ns]"],
 )
-def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_deskew):
+def test_combinations(dtype_feature, dtype_target, target_imbalanced, feature_deskew):
     # initialise raw values - include a missing value and a modal value
     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
@@ -182,7 +182,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     # set expected target score
     if dtype_target != "no target provided":
         expected_target_score = expected_prediction_matrix(
-            dtype_feature, dtype_target, target_rebalance, dtype_target
+            dtype_feature, dtype_target, target_imbalanced, dtype_target
         )
 
     # initialise object
@@ -192,7 +192,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
         ax=ax,
         feature_deskew=feature_deskew,
         target=y_final,
-        target_rebalance=target_rebalance,
+        target_imbalanced=target_imbalanced,
     )
 
     # check printing

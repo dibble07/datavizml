@@ -74,7 +74,7 @@ def test_transforms():
 
 
 @pytest.mark.parametrize(
-    "target_rebalance",
+    "target_imbalanced",
     [True, False],
 )
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_transforms():
     ["Int64", "Float64", "string", "category", "boolean", "no target provided"],
 )
 @pytest.mark.parametrize("type_data", ["dataframe", "series"])
-def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
+def test_combinations(type_data, dtype_target, matrix_full, target_imbalanced):
     # initialise raw values - include a missing value and a modal value
     raw = [0, 1, 2, 3, 4, 4, 4, 4, np.nan] * 100
 
@@ -156,7 +156,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
                 data=x_final,
                 ncols=2,
                 target=y_final,
-                target_rebalance=target_rebalance,
+                target_imbalanced=target_imbalanced,
                 prediction_matrix_full=matrix_full,
             )
         )
@@ -190,7 +190,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
                     expected_prediction_matrix(
                         sd.feature.name[2:],
                         sd.target.name[2:],
-                        target_rebalance,
+                        target_imbalanced,
                         dtype_target,
                     ),
                     2,
@@ -230,7 +230,7 @@ def test_combinations(type_data, dtype_target, matrix_full, target_rebalance):
                         expected_prediction_matrix(
                             row_name[2:],
                             col_name[2:],
-                            target_rebalance and dtype_target != "no target provided",
+                            target_imbalanced and dtype_target != "no target provided",
                             dtype_target,
                         ),
                         2,
