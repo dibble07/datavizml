@@ -33,8 +33,8 @@ def _is_numeric(series) -> bool:
 
 def _mae_pps(df, y, model_score):
     "Calculates the baseline score for y using MAE and derives the PPS"
-    df["naive"] = df[y].median()
-    baseline = mean_absolute_error(df[y], df["naive"])
+    df["median"] = df[y].median()
+    baseline = mean_absolute_error(df[y], df["median"])
     ppscore = max(0, 1 - (abs(model_score) / baseline))
     return ppscore, baseline
 
@@ -42,10 +42,10 @@ def _mae_pps(df, y, model_score):
 def _f1_pps(df, y, model_score):
     "Calculates the baseline score for y using F1 score and derives the PPS"
     df["truth"] = preprocessing.LabelEncoder().fit_transform(df[y])
-    df["most_common_value"] = df["truth"].value_counts().index[0]
+    df["mode"] = df["truth"].mode().values[0]
     truth_shuffled = df["truth"].sample(frac=1, random_state=random_seed)
     baseline = max(
-        f1_score(df["truth"], df["most_common_value"], average="weighted"),
+        f1_score(df["truth"], df["mode"], average="weighted"),
         f1_score(df["truth"], truth_shuffled, average="weighted"),
     )
     ppscore = max(0, (model_score - baseline) / (1 - baseline))
