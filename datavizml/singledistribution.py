@@ -334,7 +334,7 @@ class SingleDistribution:
                 df = pd.concat([self.feature, self.target], axis=1)
 
             ## calculate score
-            self.__target_score = pps.predictors(
+            self.__target_score = pps.calculate(
                 df=df,
                 x=self.feature.name,
                 y=self.target.name,

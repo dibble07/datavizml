@@ -179,13 +179,13 @@ class ExploratoryDataAnalysis:
 
         # calculate full matrix
         if self.__prediction_matrix_full:
-            self.__prediction_matrix = pps.predictors(
+            self.__prediction_matrix = pps.calculate(
                 df=df,
             )
         else:
             # calculate reduced matrix
             if self.__has_target:
-                self.__prediction_matrix = pps.predictors(
+                self.__prediction_matrix = pps.calculate(
                     df=df,
                     y=self.target.name,
                 )

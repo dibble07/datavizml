@@ -152,8 +152,13 @@ def _score(df, x, y):
     }
 
 
-def predictors(df, x=None, y=None):
+def calculate(df, x=None, y=None):
+
+    # ensure feature and target names are lists
     x_all = df.columns.tolist() if x is None else [x]
     y_all = df.columns.tolist() if y is None else [y]
-    scores = [_score(df, x_, y_) for x_ in x_all for y_ in y_all]
-    return pd.DataFrame(scores)
+
+    # calculate pps scores
+    scores = pd.DataFrame([_score(df, x_, y_) for x_ in x_all for y_ in y_all])
+
+    return scores
