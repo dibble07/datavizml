@@ -102,7 +102,7 @@ def _calculate_single(df: pd.DataFrame, x: str, y: str) -> Dict[str, Any]:
     if x == y:
         case = "predict_self"
         metric = None
-        ppscore, model_score, baseline_score = 1, 1, 0
+        ppscore, model_score, baseline_score = 1.0, 1.0, 0.0
     elif _is_categorical(df[y]):
         case = "classification"
         metric = "f1_weighted"
