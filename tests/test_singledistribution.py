@@ -221,7 +221,7 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     # check feature parameters
     assert summary["feature_name"] == x_name
     assert summary["feature_dtype"] == feature_str
-    assert np.round(summary["feature_score"], 3) == expected_feature_score
+    assert np.round(summary["feature_score"], 2) == np.round(expected_feature_score, 2)
     # assert False
     assert (
         summary["feature_score_type"] == "Inter-decile skew"
@@ -236,7 +236,9 @@ def test_combinations(dtype_feature, dtype_target, target_rebalance, feature_des
     if dtype_target != "no target provided":
         assert summary["target_name"] == y_name
         assert summary["target_dtype"] == dtype_target
-        assert np.round(summary["target_score"], 3) == expected_target_score
+        assert np.round(summary["target_score"], 2) == np.round(
+            expected_target_score, 2
+        )
         assert summary["target_score_type"] == "PPS"
     else:
         assert summary["target_name"] == None

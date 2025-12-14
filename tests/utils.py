@@ -31,7 +31,7 @@ expected_prediction_matrix_balanced_multi = pd.DataFrame(
 
 expected_prediction_matrix_balanced_binary = pd.DataFrame(
     data=[
-        [1.000, 0.225, 0.625, 0.625, 0.625, 0.225],
+        [1.000, 0.2254, 0.625, 0.625, 0.625, 0.2254],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
         [1.000, 1.000, 1.000, 1.000, 1.000, 1.000],

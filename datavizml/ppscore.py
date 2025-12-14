@@ -87,8 +87,6 @@ def _score(df, x, y):
     if is_datetime64_any_dtype(df[y]):
         df[y] = df[y].astype(int) / 1e9
 
-    df = df.sample(n=min(10_000, len(df)), random_state=random_seed, replace=False)
-
     if x == y:
         task = {
             "type": "predict_self",
@@ -157,6 +155,9 @@ def calculate(df, x=None, y=None):
     # ensure feature and target names are lists
     x_all = df.columns.tolist() if x is None else [x]
     y_all = df.columns.tolist() if y is None else [y]
+
+    # shuffle dataset
+    df = df.sample(n=len(df), random_state=random_seed, replace=False)
 
     # calculate pps scores
     scores = pd.DataFrame([_score(df, x_, y_) for x_ in x_all for y_ in y_all])
