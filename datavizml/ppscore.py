@@ -1,7 +1,4 @@
-from sklearn import tree
-from sklearn import preprocessing
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import mean_absolute_error, f1_score
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from pandas.api.types import (
@@ -12,11 +9,17 @@ from pandas.api.types import (
     is_string_dtype,
     is_datetime64_any_dtype,
 )
+from sklearn import tree
+from sklearn import preprocessing
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import mean_absolute_error, f1_score
+from sklearn.base import BaseEstimator
+
 
 random_seed = 123
 
 
-def _is_categorical(series) -> bool:
+def _is_categorical(series: pd.Series) -> bool:
     "Determines if series contains categorical values"
     return (
         is_bool_dtype(series)
@@ -26,12 +29,12 @@ def _is_categorical(series) -> bool:
     )
 
 
-def _is_numeric(series) -> bool:
+def _is_numeric(series: pd.Series) -> bool:
     "Determines if series contains numeric values"
     return is_numeric_dtype(series) and not is_bool_dtype(series)
 
 
-def _mae_pps(df, y, model_score):
+def _mae_pps(df: pd.DataFrame, y: str, model_score: float) -> Tuple[float, float]:
     "Calculates the baseline score for y using MAE and derives the PPS"
     df["median"] = df[y].median()
     baseline_score = mean_absolute_error(df[y], df["median"])
@@ -39,7 +42,7 @@ def _mae_pps(df, y, model_score):
     return ppscore, baseline_score
 
 
-def _f1_pps(df, y, model_score):
+def _f1_pps(df: pd.DataFrame, y: str, model_score: float) -> Tuple[float, float]:
     "Calculates the baseline score for y using F1 score and derives the PPS"
     df["truth"] = preprocessing.LabelEncoder().fit_transform(df[y])
     df["mode"] = df["truth"].mode().values[0]
@@ -52,7 +55,14 @@ def _f1_pps(df, y, model_score):
     return ppscore, baseline_score
 
 
-def _calculate_model_cv_score(df, x, y, case, model, scoring):
+def _calculate_model_cv_score(
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    case: str,
+    model: BaseEstimator,
+    scoring: str,
+) -> float:
     "Calculates the mean cross-validated model score"
 
     # preprocess target
@@ -77,7 +87,7 @@ def _calculate_model_cv_score(df, x, y, case, model, scoring):
     return scores.mean()
 
 
-def _calculate_single(df, x, y):
+def _calculate_single(df: pd.DataFrame, x: str, y: str) -> Dict[str, Any]:
     "Calculates the ppscore for a single feature target pair"
 
     # extract feature and target columns and drop null rows
@@ -131,15 +141,19 @@ def _calculate_single(df, x, y):
     }
 
 
-def calculate(df, x=None, y=None):
+def calculate(
+    df: pd.DataFrame,
+    x: Optional[str] = None,
+    y: Optional[str] = None,
+) -> pd.DataFrame:
     """Calculates the ppscore for all feature target pairs
 
     :param df: Raw data
     :type df: pandas.DataFrame
-    :param x: column names to consider as features
-    :type x: list, Optional
-    :param y: column names to consider as targets
-    :type y: list, Optional
+    :param x: column name of feature
+    :type x: str, Optional
+    :param y: column name of target
+    :type y: str, Optional
 
     :return: The ppscore values and relevant calculation information for each feature-target pair
     :rtype: pandas.DataFrame
